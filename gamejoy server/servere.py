@@ -974,7 +974,8 @@ class CricketGamepadServer:
             import subprocess
             
             if platform.system() == "Windows":
-                result = subprocess.run(['ipconfig'], capture_output=True, text=True, shell=True)
+                result = subprocess.run(['ipconfig'], capture_output=True, text=True,
+                                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
                 lines = result.stdout.split('\n')
                 for line in lines:
                     if 'IPv4 Address' in line and ':' in line:
@@ -1012,7 +1013,7 @@ class CricketGamepadServer:
                 return 5
         
         local_ips.sort(key=ip_priority)
-        return list(set(local_ips))
+        return list(dict.fromkeys(local_ips))  # dedupe, keep priority order
 
 
 def main():
