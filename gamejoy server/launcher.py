@@ -28,7 +28,8 @@ def ensure_firewall():
         if not exists:
             subprocess.run(
                 ["netsh", "advfirewall", "firewall", "add", "rule", f"name={name}",
-                 "dir=in", "action=allow", f"protocol={proto}", f"localport={PORT}"],
+                 "dir=in", "action=allow", f"protocol={proto}", f"localport={PORT}",
+                 "profile=private", "remoteip=localsubnet"],
                 capture_output=True,
             )
             print(f"Firewall: allowed {proto} {PORT}")

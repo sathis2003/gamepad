@@ -60,6 +60,7 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
   // UDP path for input packets, opened once the server advertises udp_port
   RawDatagramSocket? _udp;
   int _udpPort = 0;
+  List<int> _udpToken = const []; // per-session token every datagram starts with
 
   // CRITICAL: Cricket 24 button state management with anti-repeat
   final Map<String, bool> _buttonStates = {};
@@ -171,7 +172,10 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
         _assignedPlayerId = message['player_id'];
         _serverSupportsEnhanced = message['server_version'] == 'cricket_v2';
         print('Cricket Player $_assignedPlayerId connected');
-        if (message['udp_port'] is int && _udp == null) _openUdp(message['udp_port']);
+        if (message['udp_port'] is int && message['udp_token'] is String && _udp == null) {
+          _udpToken = utf8.encode(message['udp_token']);
+          _openUdp(message['udp_port']);
+        }
         if (mounted) setState(() {});
         break;
       case 'error':
@@ -350,9 +354,10 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
       final bytes = utf8.encode(messageStr);
       final isInput = message.containsKey('button') || message.containsKey('trigger') || message.containsKey('joystick');
       if (_udp != null && isInput) {
-        _udp!.send(bytes, _socket.remoteAddress, _udpPort);
+        final datagram = [..._udpToken, ...bytes];
+        _udp!.send(datagram, _socket.remoteAddress, _udpPort);
         // ponytail: button/trigger events sent twice so one lost datagram cannot leave a key stuck; server dedups identical bytes within 50ms
-        if (!message.containsKey('joystick')) _udp!.send(bytes, _socket.remoteAddress, _udpPort);
+        if (!message.containsKey('joystick')) _udp!.send(datagram, _socket.remoteAddress, _udpPort);
       } else {
         _socket.add(bytes);
       }

@@ -11,6 +11,8 @@ from collections import deque
 import queue
 import uuid
 import logging
+import hmac
+import secrets
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -577,7 +579,8 @@ class CricketGamepadServer:
                         'connected_at': time.time(),
                         'last_activity': time.time(),
                         'messages_received': 0,
-                        'connection_stable': False
+                        'connection_stable': False,
+                        'udp_token': secrets.token_hex(16)  # UDP datagrams must start with this
                     }
                     self.total_connections += 1
                     self.active_connections += 1
@@ -610,6 +613,7 @@ class CricketGamepadServer:
                 'server_version': 'cricket_v3_stable',
                 'max_update_rate': 100,
                 'udp_port': self.port,
+                'udp_token': self.clients[controller_id]['udp_token'],
                 'features': ['anti_repeat', 'cricket_optimized', 'enhanced_timing', 'trigger_support', 'stability', 'udp_input']
             }) + '\n'
             
@@ -878,8 +882,7 @@ class CricketGamepadServer:
             self.shutdown()
     
     def _udp_loop(self):
-        """Route UDP input packets to the controller owned by the sender's IP"""
-        # ponytail: pairing by source IP only; add a per-client token if two phones share one IP (NAT)
+        """Route UDP input packets by the 32-hex-char session token they start with"""
         while self.running:
             try:
                 data, addr = self.udp_socket.recvfrom(8192)
@@ -888,15 +891,17 @@ class CricketGamepadServer:
             except OSError:
                 break
 
+            token, payload = data[:32], data[32:]
             with self.client_lock:
                 controller_id = next(
-                    (cid for cid, c in self.clients.items() if c['address'][0] == addr[0]), None
+                    (cid for cid, c in self.clients.items()
+                     if hmac.compare_digest(c['udp_token'].encode(), token)), None
                 )
             if controller_id is None:
-                continue
+                continue  # unknown or forged sender
 
             processor = self.processors[controller_id]
-            for line in data.decode('utf-8', errors='replace').split('\n'):
+            for line in payload.decode('utf-8', errors='replace').split('\n'):
                 line = line.strip()
                 if line:
                     self._update_client_activity(controller_id)
