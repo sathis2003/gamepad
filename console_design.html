@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cricket 24 Pad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<style>
+/* ================= Page chrome (not part of the app) ================= */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: #1C1C21; color: #E6E6EA; min-height: 100vh;
+  font: 14px/1.4 system-ui, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px;
+}
+.chrome { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: center; align-items: center; }
+.seg { display: flex; background: #2A2A31; border-radius: 10px; padding: 3px; }
+.seg button { background: none; border: 0; color: #A9A9B3; font: inherit; font-weight: 500; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: #44444E; color: #fff; }
+.toggle { display: flex; gap: 8px; align-items: center; color: #A9A9B3; cursor: pointer; }
+.toggle input { accent-color: #ECEEF0; width: 16px; height: 16px; }
+.stage { width: 100%; display: flex; justify-content: center; }
+.device {
+  width: 844px; height: 390px; flex-shrink: 0; position: relative; overflow: hidden;
+  border-radius: 38px; border: 10px solid #000; box-shadow: 0 0 0 2px #3A3A42, 0 30px 60px rgba(0,0,0,.45);
+  transform-origin: top center; user-select: none; -webkit-user-select: none;
+}
+.log {
+  width: 844px; max-width: 100%; height: 76px; overflow-y: auto; border-radius: 10px;
+  background: #121216; border: 1px solid #2E2E36; padding: 8px 12px;
+  font: 11px/1.5 ui-monospace, Consolas, monospace; color: #8FD1A6;
+}
+.log:empty::before { content: "Messages the controller sends to your PC show up here."; color: #5E5E68; font-family: system-ui, sans-serif; }
+
+/* ================= App tokens ================= */
+.device {
+  --bg: #23262A; --surface: #2B2F34; --raised: #383D43; --well: #1B1E21; --line: #43494F;
+  --ink: #ECEEF0; --muted: #A3AAB2; --accent: #ECEEF0; --accent-ink: #1B1E21;
+  --ok: #7BC96F; --bad: #EE7D76;
+  --a: #7BC96F; --b: #EE7D76; --x: #6AA6EC; --y: #EBCB5E;
+  --key: linear-gradient(180deg, #3F444A, #34393E);
+  --key-shadow: 0 3px 0 #15181B, inset 0 1px 0 rgba(255,255,255,.08);
+  --key-down: inset 0 2px 5px rgba(0,0,0,.4);
+  --font: "Manrope", system-ui, sans-serif;
+  /* Safe edges: clear of the notch side and the home-indicator gesture strip. */
+  --edge-x: 32px; --edge-bottom: 26px;
+}
+
+.screen { position: absolute; inset: 0; display: none; color: var(--ink); font-family: var(--font); background: linear-gradient(180deg, #2A2E33, #1F2226); }
+.screen.active { display: block; }
+.device [hidden] { display: none !important; }
+:where(.device) button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+.device button:focus-visible, .device input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.material-icons-round { font-size: 22px; line-height: 1; }
+
+/* ---------- Connect screen ---------- */
+.home { height: 100%; overflow-y: auto; display: grid; grid-template-columns: 1fr 360px; gap: 36px; padding: 24px 40px; align-items: center; }
+.home::-webkit-scrollbar { width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: var(--accent); color: var(--accent-ink); }
+.brand-name { font-weight: 700; font-size: 17px; }
+.home h1 { font-weight: 800; font-size: 32px; line-height: 1.08; letter-spacing: -.01em; margin: 0 0 8px; max-width: 15ch; }
+.lead { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0 0 16px; max-width: 40ch; }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: grid; gap: 8px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 26px 1fr; gap: 0 12px; font-size: 14px; }
+.steps li::before {
+  content: counter(s); grid-row: span 2; width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--well); color: var(--muted); font-weight: 700; font-size: 13px;
+}
+.steps b { font-weight: 600; }
+.steps span { color: var(--muted); }
+.steps code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--ink); }
+
+.panel { background: var(--surface); border-radius: 22px; padding: 22px; box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 30px rgba(0,0,0,.25); }
+.panel h2 { font-weight: 700; font-size: 20px; margin: 0 0 14px; }
+.field { display: block; margin-bottom: 12px; }
+.field > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.field input {
+  width: 100%; height: 48px; padding: 0 14px; font: 600 16px var(--font); color: var(--ink);
+  background: var(--well); border: 0; border-radius: 14px; box-shadow: inset 0 2px 5px rgba(0,0,0,.4); user-select: text;
+}
+.field input::placeholder { color: #6B737B; font-weight: 500; }
+.field input:focus { outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,.4), 0 0 0 2px var(--accent); }
+.field input[aria-invalid="true"] { box-shadow: inset 0 2px 5px rgba(0,0,0,.4), 0 0 0 2px var(--bad); }
+.field-row { display: flex; gap: 10px; align-items: flex-end; }
+.field-row .field { width: 104px; flex-shrink: 0; margin-bottom: 0; }
+.btn-primary {
+  flex: 1; height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent); color: var(--accent-ink); border-radius: 14px; font-weight: 700; font-size: 16px;
+  box-shadow: 0 3px 0 #9DA3AA; transition: transform .08s, box-shadow .08s;
+}
+.btn-primary:active { transform: translateY(3px); box-shadow: none; }
+.btn-primary:disabled { cursor: progress; }
+.msg { min-height: 20px; margin: 12px 0 0; font-size: 13px; display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.msg .material-icons-round { font-size: 17px; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--ok); }
+.spinner { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
+.btn-primary .spinner { margin: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.form-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
+.btn-link { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.btn-link:hover { color: var(--ink); }
+.btn-link .material-icons-round { font-size: 18px; }
+.btn-link[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.settings { margin: 4px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; }
+.settings dt { color: var(--muted); }
+.settings dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ---------- Controller screen ----------
+   Ergonomics for a phone held in landscape with two thumbs:
+   - Primary controls (left stick, A/B/X/Y) sit in the lower outer corners where thumbs rest.
+   - Secondary controls (D-pad, right stick, DRS) sit one stretch inward and up.
+   - Triggers and bumpers hug the top corners: edge targets are the easiest to hit blind.
+   - Rare controls (View, Menu, Pause, Back) go in the centre, out of the thumb paths, so
+     they are never pressed by accident.
+   - Every target is at least 48px with 8px+ gaps; sticks accept touches beyond their ring. */
+.c { position: absolute; }
+.key {
+  background: var(--key); box-shadow: var(--key-shadow);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 800; transition: transform .07s, box-shadow .07s, background .07s, color .07s, opacity .2s;
+  touch-action: none;
+}
+.key.on { transform: translateY(3px); box-shadow: var(--key-down); background: #ECEEF0; color: #1B1E21; }
+.key.cool { opacity: .5; }
+
+.trig { top: 14px; width: 112px; height: 56px; border-radius: 22px 22px 14px 14px; font-size: 18px; }
+.bump { top: 20px; width: 84px; height: 48px; border-radius: 999px; font-size: 16px; }
+.lt { left: var(--edge-x); } .lb { left: calc(var(--edge-x) + 124px); }
+.rt { right: var(--edge-x); } .rb { right: calc(var(--edge-x) + 124px); }
+
+.hud { top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; }
+.status { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 999px; background: var(--well); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.status.off .dot { background: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent); }
+.rate { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.leave { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--well); }
+.leave:hover { color: var(--ink); }
+
+/* Rare controls: 2x2 in the centre */
+.sysgrid { top: 112px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(2, 52px); gap: 12px; }
+.sys { width: 52px; height: 52px; border-radius: 50%; flex-direction: column; gap: 0; }
+.sys small { font-size: 9px; font-weight: 600; color: var(--muted); margin-top: 1px; }
+.sys.on small { color: #1B1E21; }
+
+/* Sticks */
+.joy { width: var(--s); height: var(--s); border-radius: 50%; touch-action: none; cursor: grab; background: var(--well); box-shadow: inset 0 4px 10px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.05); }
+.joy::before { content: ""; position: absolute; inset: -28px; border-radius: 50%; } /* larger touch area than the ring */
+.stick {
+  position: absolute; left: 50%; top: 50%; width: calc(var(--s) * .4); height: calc(var(--s) * .4);
+  transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, #59606A, #3A3F45); box-shadow: 0 4px 8px rgba(0,0,0,.5), inset 0 -3px 6px rgba(0,0,0,.35);
+}
+.joy.active .stick { background: radial-gradient(circle at 50% 40%, #FFFFFF, #CFD3D8); }
+.cap { position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; pointer-events: none; }
+.joy-l { --s: 150px; left: calc(var(--edge-x) + 12px); bottom: calc(var(--edge-bottom) + 6px); }
+.joy-r { --s: 112px; right: 216px; top: 96px; }
+
+/* D-pad: secondary, up and inward from the left stick */
+.dpad { left: 190px; top: 84px; display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
+.d { width: 48px; height: 48px; border-radius: 12px; }
+.d .material-icons-round { font-size: 26px; }
+.d[data-btn="UP"] { grid-area: 1 / 2; } .d[data-btn="LEFT"] { grid-area: 2 / 1; }
+.d[data-btn="RIGHT"] { grid-area: 2 / 3; } .d[data-btn="DOWN"] { grid-area: 3 / 2; }
+
+/* Face buttons: primary, under the resting right thumb */
+.face { right: var(--edge-x); bottom: var(--edge-bottom); display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 58px); gap: 2px 4px; }
+.fb { width: 60px; height: 58px; border-radius: 50%; font-size: 22px; color: var(--c); }
+.fb.on { background: var(--c); color: #1B1E21; }
+.fb[data-k="Y"] { grid-area: 1 / 2; --c: var(--y); } .fb[data-k="X"] { grid-area: 2 / 1; --c: var(--x); }
+.fb[data-k="B"] { grid-area: 2 / 3; --c: var(--b); } .fb[data-k="A"] { grid-area: 3 / 2; --c: var(--a); }
+
+/* DRS: one short stretch inward from A/B/X/Y */
+.drs { right: 236px; bottom: calc(var(--edge-bottom) + 4px); height: 60px; padding: 0 18px 0 10px; border-radius: 18px; gap: 10px; background: #ECEEF0; color: #1B1E21; box-shadow: 0 3px 0 #9DA3AA; }
+.drs.on { background: #fff; box-shadow: none; }
+.drs-t { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(27,30,33,.1); font-size: 24px; font-weight: 800; }
+.drs b { display: block; font-size: 16px; line-height: 1.1; text-align: left; }
+.drs small { display: block; font-size: 11.5px; font-weight: 600; opacity: .7; text-align: left; font-variant-numeric: tabular-nums; min-width: 9.5ch; }
+.drs.cool { opacity: 1; background: var(--raised); color: var(--muted); box-shadow: var(--key-down); }
+
+/* Left-handed: mirror the whole layout so primary controls swap thumbs */
+.pad-mirror { position: absolute; inset: 0; }
+#pad.lefty .pad-mirror { transform: scaleX(-1); }
+/* Flip back what must read normally. D-pad and A/B/X/Y keep their own arrangement. */
+#pad.lefty .pad-mirror > .key, #pad.lefty .dpad, #pad.lefty .face { transform: scaleX(-1); }
+#pad.lefty .pad-mirror > .key.on { transform: scaleX(-1) translateY(3px); }
+#pad.lefty .cap { transform: translateX(-50%) scaleX(-1); }
+
+.toast {
+  position: absolute; left: 50%; bottom: 16px; z-index: 30; transform: translate(-50%, 140%); opacity: 0;
+  background: var(--ink); color: var(--accent-ink); padding: 10px 16px; border-radius: 999px; font: 700 13px var(--font);
+  display: flex; gap: 8px; align-items: center; transition: transform .22s, opacity .22s; pointer-events: none;
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast.bad { background: var(--bad); color: #fff; }
+.scrim { position: absolute; inset: 0; z-index: 20; display: none; place-items: center; background: rgba(0,0,0,.55); }
+.scrim.show { display: grid; }
+.dialog { width: 360px; background: var(--surface); color: var(--ink); border-radius: 22px; padding: 22px; font-family: var(--font); box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.dialog h2 { font-weight: 800; font-size: 20px; margin: 0 0 8px; }
+.dialog p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.dialog dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0 0 18px; font-size: 13px; }
+.dialog dt { color: var(--muted); } .dialog dd { margin: 0; font-weight: 700; text-align: right; }
+.dialog .btn-primary { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .device *, .device *::before { transition: none !important; animation-duration: 0s !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="seg" role="group" aria-label="Screen">
+    <button data-go="home" aria-pressed="true">Connect</button>
+    <button data-go="pad" aria-pressed="false">Controller</button>
+  </div>
+  <label class="toggle"><input type="checkbox" id="leftyToggle"> Left-handed layout</label>
+</div>
+
+<div class="stage"><div class="device" id="device">
+
+  <!-- ============ Connect ============ -->
+  <section class="screen active" id="home">
+    <div class="home">
+      <div class="intro">
+        <div class="brand">
+          <span class="logo"><span class="material-icons-round">sports_cricket</span></span>
+          <span class="brand-name">Cricket 24 Pad</span>
+        </div>
+        <h1>Play Cricket 24 from your phone</h1>
+        <p class="lead">Your phone becomes a wireless controller for the game running on your PC.</p>
+        <ol class="steps">
+          <li><b>Start the server on your PC</b><span>Run <code>python server.py</code></span></li>
+          <li><b>Enter the address it shows</b><span>Something like 192.168.1.100</span></li>
+          <li><b>Stay on the same Wi‑Fi</b><span>Allow Python through the firewall if asked</span></li>
+        </ol>
+      </div>
+
+      <form class="panel" id="connectForm" novalidate>
+        <h2>Connect to your PC</h2>
+        <label class="field"><span>PC address</span>
+          <input id="ip" placeholder="192.168.1.100" inputmode="decimal" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="field-row">
+          <label class="field"><span>Port</span><input id="port" value="8080" inputmode="numeric"></label>
+          <button type="submit" class="btn-primary" id="connectBtn">Connect</button>
+        </div>
+        <div class="msg" id="msg" role="status" aria-live="polite"></div>
+        <div class="form-foot">
+          <button type="button" class="btn-link" id="testBtn"><span class="material-icons-round">wifi_tethering</span>Test connection</button>
+          <button type="button" class="btn-link" id="advBtn" aria-expanded="false" aria-controls="settings">Controller settings<span class="material-icons-round chev">expand_more</span></button>
+        </div>
+        <dl class="settings" id="settings" hidden>
+          <dt>Shortest button press</dt><dd>25 ms</dd>
+          <dt>Repeat protection</dt><dd>50 ms</dd>
+          <dt>Stick updates</dt><dd>60 per second</dd>
+          <dt>Stick dead zone</dt><dd>15%</dd>
+        </dl>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ Controller ============ -->
+  <section class="screen" id="pad">
+    <div class="pad-mirror">
+      <button class="c key trig lt" data-trigger="LT">LT</button>
+      <button class="c key bump lb" data-btn="LB">LB</button>
+      <button class="c key bump rb" data-btn="RB">RB</button>
+      <button class="c key trig rt" data-trigger="RT">RT</button>
+
+      <div class="c joy joy-l" data-joy="left" role="slider" aria-label="Move stick"><div class="stick"></div><span class="cap">Move</span></div>
+
+      <div class="c dpad" role="group" aria-label="D-pad">
+        <button class="key d" data-btn="UP" aria-label="Up"><span class="material-icons-round">keyboard_arrow_up</span></button>
+        <button class="key d" data-btn="LEFT" aria-label="Left"><span class="material-icons-round">keyboard_arrow_left</span></button>
+        <button class="key d" data-btn="RIGHT" aria-label="Right"><span class="material-icons-round">keyboard_arrow_right</span></button>
+        <button class="key d" data-btn="DOWN" aria-label="Down"><span class="material-icons-round">keyboard_arrow_down</span></button>
+      </div>
+
+      <div class="c joy joy-r" data-joy="right" role="slider" aria-label="Camera stick"><div class="stick"></div><span class="cap">Camera</span></div>
+
+      <div class="c face" role="group" aria-label="Action buttons">
+        <button class="key fb" data-k="Y" data-btn="Y">Y</button>
+        <button class="key fb" data-k="X" data-btn="X">X</button>
+        <button class="key fb" data-k="B" data-btn="B">B</button>
+        <button class="key fb" data-k="A" data-tap="A">A</button>
+      </div>
+
+      <button class="c key drs" id="appeal">
+        <span class="drs-t" aria-hidden="true">T</span>
+        <span><b>DRS review</b><small id="appealCd">Ready</small></span>
+      </button>
+    </div>
+
+    <!-- Centre column is not mirrored -->
+    <div class="c hud">
+      <div class="status" id="status" title="Long-press to preview a lost connection"><span class="dot"></span><span id="statusText">Player 1</span><span class="rate" id="perfText">0/s</span></div>
+      <button class="leave" id="leaveBtn" aria-label="Disconnect"><span class="material-icons-round">logout</span></button>
+    </div>
+    <div class="c sysgrid">
+      <button class="key sys" data-tap="VIEW"><span class="material-icons-round">filter_none</span><small>View</small></button>
+      <button class="key sys" data-tap="MENU"><span class="material-icons-round">menu</span><small>Menu</small></button>
+      <button class="key sys" data-tap="PAUSE"><span class="material-icons-round">pause</span><small>Pause</small></button>
+      <button class="key sys" data-tap="BACK"><span class="material-icons-round">undo</span><small>Back</small></button>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"><div class="dialog" id="dialog" role="dialog" aria-modal="true"></div></div>
+  <div class="toast" id="toast" role="status"></div>
+</div></div>
+
+<div class="log" id="log"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const device = $('#device');
+
+// ---------- page chrome ----------
+function fit() {
+  const s = Math.min(1, (innerWidth - 32) / 864);
+  device.style.transform = `scale(${s})`;
+  device.parentElement.style.height = (410 * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+function show(id) {
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  $$('[data-go]').forEach(b => b.setAttribute('aria-pressed', b.dataset.go === id));
+  if (id === 'pad') startSession();
+}
+$$('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+$('#leftyToggle').onchange = e => $('#pad').classList.toggle('lefty', e.target.checked);
+
+// ---------- toast / dialog ----------
+let toastTimer;
+function toast(html, ms = 2000, bad = false) {
+  const el = $('#toast');
+  el.innerHTML = html; el.classList.toggle('bad', bad); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+const openDialog = html => { $('#dialog').innerHTML = html; $('#scrim').classList.add('show'); $('#dialog button')?.focus(); };
+const closeDialog = () => $('#scrim').classList.remove('show');
+
+// ---------- connect ----------
+// The real app opens a TCP socket; a browser can't, so connecting is simulated.
+const ipEl = $('#ip'), portEl = $('#port'), connectBtn = $('#connectBtn'), msgEl = $('#msg');
+const IP_RE = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let busy = false;
+
+function say(kind, text) {
+  msgEl.className = 'msg ' + (kind || '');
+  const icon = kind === 'err' ? '<span class="material-icons-round">error_outline</span>'
+             : kind === 'ok' ? '<span class="material-icons-round">check_circle</span>'
+             : kind === 'busy' ? '<span class="spinner"></span>' : '';
+  msgEl.innerHTML = text ? icon + '<span>' + text + '</span>' : '';
+}
+function read() {
+  const ip = ipEl.value.trim(), port = parseInt(portEl.value.trim(), 10) || 8080;
+  ipEl.removeAttribute('aria-invalid'); portEl.removeAttribute('aria-invalid');
+  if (!ip) { ipEl.setAttribute('aria-invalid', 'true'); say('err', "Enter your PC's address. The server prints it when it starts."); return null; }
+  if (!IP_RE.test(ip)) { ipEl.setAttribute('aria-invalid', 'true'); say('err', 'Use four numbers separated by dots, like 192.168.1.100.'); return null; }
+  if (port < 1024 || port > 65535) { portEl.setAttribute('aria-invalid', 'true'); say('err', 'Port must be between 1024 and 65535.'); return null; }
+  return { ip, port };
+}
+function setBusy(b) {
+  busy = b; connectBtn.disabled = b; $('#testBtn').disabled = b;
+  connectBtn.innerHTML = b ? '<span class="spinner"></span>Connecting' : 'Connect';
+}
+$('#connectForm').onsubmit = async e => {
+  e.preventDefault();
+  if (busy) return;
+  const t = read(); if (!t) return;
+  setBusy(true);
+  say('busy', `Connecting to ${t.ip}:${t.port}…`); await wait(900);
+  say('ok', 'Connected. Opening the controller…'); await wait(700);
+  setBusy(false); say('', '');
+  show('pad');
+};
+$('#testBtn').onclick = async () => {
+  const t = read(); if (!t) return;
+  say('busy', `Looking for the server at ${t.ip}:${t.port}…`); await wait(1000);
+  say('ok', "Server found. You're ready to connect.");
+};
+$('#advBtn').onclick = e => {
+  const s = $('#settings'); s.hidden = !s.hidden;
+  e.currentTarget.setAttribute('aria-expanded', !s.hidden);
+};
+
+// ---------- controller ----------
+const MIN_PRESS = 25, MIN_GAP = 50, SHOT_CD = 200, APPEAL_CD = 1000, DEADZONE = 0.15;
+const lastPress = {}, held = {};
+let sent = 0, recent = [], sessionStart = Date.now(), connected = true;
+const cooldownFor = b => b === 'A' ? SHOT_CD : b === 'APPEAL' ? APPEAL_CD : MIN_GAP;
+const onCooldown = b => lastPress[b] && Date.now() - lastPress[b] < cooldownFor(b);
+
+const logEl = $('#log');
+function send(msg) {
+  if (!connected) return;
+  sent++; recent.push(Date.now());
+  const line = document.createElement('div');
+  line.textContent = JSON.stringify({ player: 'cricket_player', ...msg, game: 'cricket24', timestamp: Date.now() });
+  logEl.prepend(line);
+  if (logEl.children.length > 60) logEl.lastChild.remove();
+}
+const buzz = p => { try { navigator.vibrate?.(p); } catch {} };
+
+$$('[data-btn]').forEach(el => {
+  const b = el.dataset.btn;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(b) || held[b]) return;
+    held[b] = lastPress[b] = Date.now();
+    el.classList.add('on'); send({ button: b, type: 'press' }); buzz(30);
+  });
+  const up = () => {
+    if (!held[b]) return;
+    const t = Math.max(0, MIN_PRESS - (Date.now() - held[b]));
+    setTimeout(() => { held[b] = 0; el.classList.remove('on'); send({ button: b, type: 'release' }); }, t);
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+$$('[data-tap]').forEach(el => {
+  const b = el.dataset.tap;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (!connected || onCooldown(b)) return;
+    lastPress[b] = Date.now();
+    send({ button: b, type: 'tap' }); buzz(b === 'A' ? 40 : 30);
+    el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 110);
+    if (b === 'A') setTimeout(() => { el.classList.add('cool'); setTimeout(() => el.classList.remove('cool'), SHOT_CD - 110); }, 110);
+  });
+});
+
+$$('[data-trigger]').forEach(el => {
+  const t = el.dataset.trigger;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(t)) return;
+    lastPress[t] = Date.now(); el.classList.add('on');
+    send({ trigger: t, value: 1.0, type: 'trigger_press' }); buzz(60);
+  });
+  const up = () => { if (!el.classList.contains('on')) return; el.classList.remove('on'); send({ trigger: t, value: 0.0, type: 'trigger_release' }); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+const appeal = $('#appeal'), appealCd = $('#appealCd');
+appeal.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!connected || onCooldown('APPEAL')) return;
+  lastPress.APPEAL = Date.now();
+  send({ button: 'APPEAL', type: 'tap', priority: 'high' }); buzz([80, 50, 60]);
+  toast('<span class="material-icons-round" style="font-size:17px">sports_cricket</span>Review sent', 1100);
+  appeal.classList.add('cool');
+  (function tick() {
+    const left = APPEAL_CD - (Date.now() - lastPress.APPEAL);
+    if (left <= 0) { appeal.classList.remove('cool'); appealCd.textContent = 'Ready'; return; }
+    appealCd.textContent = `Wait ${(left / 1000).toFixed(1)}s`; requestAnimationFrame(tick);
+  })();
+});
+
+$$('[data-joy]').forEach(base => {
+  const id = base.dataset.joy, stick = $('.stick', base);
+  let last = { x: 0, y: 0 }, lastSend = 0;
+  const emit = (x, y) => {
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+    if (Math.abs(x - last.x) < 0.05 && Math.abs(y - last.y) < 0.05) return;
+    if ((x || y) && Date.now() - lastSend < 16) return;
+    last = { x, y }; lastSend = Date.now();
+    send({ joystick: id, x: x.toFixed(3), y: y.toFixed(3) });
+  };
+  const move = e => {
+    const r = base.getBoundingClientRect(), scale = r.width / base.offsetWidth;
+    let dx = (e.clientX - r.left - r.width / 2) / scale, dy = (e.clientY - r.top - r.height / 2) / scale;
+    const max = base.offsetWidth * 0.3, d = Math.hypot(dx, dy);
+    if (d > max) { dx *= max / d; dy *= max / d; }
+    // In left-handed mode the parent is mirrored, so screen-x is flipped relative to the stick.
+    const flip = $('#pad').classList.contains('lefty') ? -1 : 1;
+    stick.style.transform = `translate(calc(-50% + ${dx * flip}px), calc(-50% + ${dy}px))`;
+    emit(dx / max, dy / max);
+  };
+  base.addEventListener('pointerdown', e => { base.setPointerCapture(e.pointerId); base.classList.add('active'); move(e); });
+  base.addEventListener('pointermove', e => { if (base.hasPointerCapture(e.pointerId)) move(e); });
+  const reset = () => { base.classList.remove('active'); stick.style.transform = ''; emit(0, 0); };
+  base.addEventListener('pointerup', reset); base.addEventListener('pointercancel', reset);
+});
+
+function startSession() {
+  connected = true; sessionStart = Date.now(); sent = 0; recent = [];
+  $('#status').classList.remove('off'); $('#statusText').textContent = 'Player 1';
+}
+setInterval(() => {
+  const now = Date.now(); recent = recent.filter(t => now - t < 1000);
+  $('#perfText').textContent = `${recent.length}/s`;
+}, 250);
+
+$('#leaveBtn').onclick = () => { send({ type: 'cricket_disconnect' }); show('home'); };
+
+// Long-press the status pill to preview the lost-connection state.
+let lp;
+$('#status').addEventListener('pointerdown', () => lp = setTimeout(loseConnection, 700));
+$('#status').addEventListener('pointerup', () => clearTimeout(lp));
+function loseConnection() {
+  if (!connected) return;
+  connected = false;
+  $('#status').classList.add('off'); $('#statusText').textContent = 'Disconnected';
+  toast('Lost connection to your PC', 2500, true);
+  setTimeout(() => openDialog(`
+    <h2>Connection lost</h2>
+    <p>Your phone can't reach the server. Check that server.py is still running and both devices are on the same Wi‑Fi.</p>
+    <dl><dt>Session length</dt><dd>${Math.max(1, Math.round((Date.now() - sessionStart) / 60000))} min</dd><dt>Inputs sent</dt><dd>${sent}</dd></dl>
+    <button class="btn-primary" id="backSetup">Back to connect</button>`), 700);
+}
+$('#dialog').addEventListener('click', e => { if (e.target.id === 'backSetup') { closeDialog(); show('home'); } });
+</script>
+</body>
+</html>

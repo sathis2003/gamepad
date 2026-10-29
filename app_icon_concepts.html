@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Icon Concepts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 40px; background: #1C1C21; color: #E6E6EA; font: 14px/1.45 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 32px 0 12px; }
+  p.sub { color: #A9A9B3; margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .card { background: #26262D; border-radius: 16px; padding: 18px; }
+  .card h3 { font-size: 15px; margin: 0 0 4px; }
+  .card p { color: #A9A9B3; margin: 0 0 16px; font-size: 13px; min-height: 3.9em; }
+  .sizes { display: flex; align-items: flex-end; gap: 14px; }
+  .icon { display: block; border-radius: 22%; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.4); flex-shrink: 0; }
+  .icon.round { border-radius: 50%; }
+  .tag { font-size: 11px; color: #8A8A94; margin-top: 6px; }
+  .screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .home { border-radius: 18px; padding: 20px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; }
+  .home.dark { background: linear-gradient(160deg, #14213D, #0B0F1A); }
+  .home.light { background: linear-gradient(160deg, #F4E9DA, #C9D8E8); }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; text-align: center; }
+  .home.dark .app { color: #fff; } .home.light .app { color: #1A1A1A; }
+  .names { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .name { background: #26262D; border-radius: 14px; padding: 14px 16px; }
+  .name b { display: block; font-size: 18px; color: #fff; margin-bottom: 2px; }
+  .name span { color: #A9A9B3; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<h1>App icon and name options</h1>
+<p class="sub">General gamepad options in the Console palette, not tied to cricket. Each icon is shown large, at launcher size, and as a round icon, then on real-looking home screens.</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A3F45"/><stop offset="1" stop-color="#202327"/>
+    </linearGradient>
+
+    <!-- 1. Face buttons -->
+    <g id="i-face">
+      <rect width="108" height="108" fill="url(#bg)"/>
+      <circle cx="54" cy="36" r="10" fill="#EBCB5E"/>
+      <circle cx="36" cy="54" r="10" fill="#6AA6EC"/>
+      <circle cx="72" cy="54" r="10" fill="#EE7D76"/>
+      <circle cx="54" cy="72" r="10" fill="#7BC96F"/>
+    </g>
+
+    <!-- 2. D-pad -->
+    <g id="i-dpad">
+      <rect width="108" height="108" fill="url(#bg)"/>
+      <path d="M46 30 h16 a3 3 0 0 1 3 3 v13 h13 a3 3 0 0 1 3 3 v10 a3 3 0 0 1 -3 3 h-13 v13 a3 3 0 0 1 -3 3 h-16 a3 3 0 0 1 -3 -3 v-13 h-13 a3 3 0 0 1 -3 -3 v-10 a3 3 0 0 1 3 -3 h13 v-13 a3 3 0 0 1 3 -3z" fill="#ECEEF0"/>
+      <circle cx="54" cy="54" r="5.5" fill="#7BC96F"/>
+    </g>
+
+    <!-- 3. Wireless stick -->
+    <g id="i-stick">
+      <rect width="108" height="108" fill="url(#bg)"/>
+      <path d="M41.3 37.3 A18 18 0 0 1 66.7 37.3" stroke="#ECEEF0" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <path d="M35.6 31.6 A26 26 0 0 1 72.4 31.6" stroke="#ECEEF0" stroke-width="4.5" stroke-linecap="round" fill="none" opacity=".55"/>
+      <rect x="34" y="72" width="40" height="10" rx="5" fill="#ECEEF0"/>
+      <rect x="51" y="54" width="6" height="20" rx="3" fill="#ECEEF0"/>
+      <circle cx="54" cy="51" r="10" fill="#7BC96F"/>
+    </g>
+
+    <!-- 4. Phone as controller -->
+    <g id="i-phone">
+      <rect width="108" height="108" fill="url(#bg)"/>
+      <rect x="20" y="34" width="68" height="40" rx="11" fill="#ECEEF0"/>
+      <rect x="25" y="39" width="58" height="30" rx="7" fill="#2B2F34"/>
+      <circle cx="38" cy="54" r="7.5" fill="#ECEEF0"/>
+      <circle cx="70" cy="47" r="3.6" fill="#EBCB5E"/>
+      <circle cx="63" cy="54" r="3.6" fill="#6AA6EC"/>
+      <circle cx="77" cy="54" r="3.6" fill="#EE7D76"/>
+      <circle cx="70" cy="61" r="3.6" fill="#7BC96F"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="grid">
+  <div class="card">
+    <h3>1. Face buttons</h3>
+    <p>The four coloured controller buttons. Instantly reads as "gamepad" and stays crisp at any size.</p>
+    <div class="sizes">
+      <svg class="icon" width="112" height="112" viewBox="0 0 108 108"><use href="#i-face"/></svg>
+      <svg class="icon" width="48" height="48" viewBox="0 0 108 108"><use href="#i-face"/></svg>
+      <svg class="icon round" width="48" height="48" viewBox="0 0 108 108"><use href="#i-face"/></svg>
+    </div>
+  </div>
+  <div class="card">
+    <h3>2. D-pad</h3>
+    <p>A bold white D-pad with a green "connected" light in the middle. The simplest and most graphic.</p>
+    <div class="sizes">
+      <svg class="icon" width="112" height="112" viewBox="0 0 108 108"><use href="#i-dpad"/></svg>
+      <svg class="icon" width="48" height="48" viewBox="0 0 108 108"><use href="#i-dpad"/></svg>
+      <svg class="icon round" width="48" height="48" viewBox="0 0 108 108"><use href="#i-dpad"/></svg>
+    </div>
+  </div>
+  <div class="card">
+    <h3>3. Wireless stick</h3>
+    <p>A joystick sending a signal, which says what the app does: a wireless controller for your PC.</p>
+    <div class="sizes">
+      <svg class="icon" width="112" height="112" viewBox="0 0 108 108"><use href="#i-stick"/></svg>
+      <svg class="icon" width="48" height="48" viewBox="0 0 108 108"><use href="#i-stick"/></svg>
+      <svg class="icon round" width="48" height="48" viewBox="0 0 108 108"><use href="#i-stick"/></svg>
+    </div>
+  </div>
+  <div class="card">
+    <h3>4. Phone as controller</h3>
+    <p>A phone held sideways with a stick and buttons on it: the most literal. Details get small on the home screen.</p>
+    <div class="sizes">
+      <svg class="icon" width="112" height="112" viewBox="0 0 108 108"><use href="#i-phone"/></svg>
+      <svg class="icon" width="48" height="48" viewBox="0 0 108 108"><use href="#i-phone"/></svg>
+      <svg class="icon round" width="48" height="48" viewBox="0 0 108 108"><use href="#i-phone"/></svg>
+    </div>
+  </div>
+</div>
+
+<h2>On a home screen</h2>
+<div class="screens">
+  <div class="home dark">
+    <div class="app"><svg class="icon" width="52" height="52" viewBox="0 0 108 108"><use href="#i-face"/></svg>PadLink</div>
+    <div class="app"><svg class="icon" width="52" height="52" viewBox="0 0 108 108"><use href="#i-dpad"/></svg>Thumbpad</div>
+    <div class="app"><svg class="icon" width="52" height="52" viewBox="0 0 108 108"><use href="#i-stick"/></svg>Couchpad</div>
+    <div class="app"><svg class="icon" width="52" height="52" viewBox="0 0 108 108"><use href="#i-phone"/></svg>PocketPad</div>
+  </div>
+  <div class="home light">
+    <div class="app"><svg class="icon round" width="52" height="52" viewBox="0 0 108 108"><use href="#i-face"/></svg>PadLink</div>
+    <div class="app"><svg class="icon round" width="52" height="52" viewBox="0 0 108 108"><use href="#i-dpad"/></svg>Thumbpad</div>
+    <div class="app"><svg class="icon round" width="52" height="52" viewBox="0 0 108 108"><use href="#i-stick"/></svg>Couchpad</div>
+    <div class="app"><svg class="icon round" width="52" height="52" viewBox="0 0 108 108"><use href="#i-phone"/></svg>PocketPad</div>
+  </div>
+</div>
+<p class="tag">Names under the icons are only to show how each looks; any name works with any icon.</p>
+
+<h2>Name options</h2>
+<div class="names">
+  <div class="name"><b>PadLink</b><span>Says what it does: your phone linked to your PC as a pad.</span></div>
+  <div class="name"><b>Thumbpad</b><span>You play with your thumbs; friendly and easy to remember.</span></div>
+  <div class="name"><b>Couchpad</b><span>Play your PC games from the sofa.</span></div>
+  <div class="name"><b>PocketPad</b><span>A controller that's always in your pocket.</span></div>
+</div>
+<p class="sub" style="margin-top:12px">All four fit under an icon without being cut off. Before publishing, search Google Play for the one you pick to make sure no other controller app already uses it.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cricket 24 Gamepad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  :root {
+    --green900:#1B5E20; --teal900:#004D40; --blue900:#0D47A1;
+    --green200:#A5D6A7; --green300:#81C784; --green400:#66BB6A; --green600:#43A047; --green500:#4CAF50;
+    --teal600:#00897B; --blue300:#64B5F6; --blue600:#1E88E5; --blue700:#1976D2;
+    --orange300:#FFB74D; --orange400:#FFA726; --orange500:#FF9800; --orange600:#FB8C00; --orange700:#F57C00;
+    --red200:#EF9A9A; --red300:#E57373; --red500:#F44336; --red600:#E53935;
+    --yellow600:#FDD835; --purple700:#7B1FA2;
+    --grey500:#9E9E9E; --grey600:#757575; --grey700:#616161; --grey800:#424242; --grey900:#212121;
+    --pad-bg:#0A1A0A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #111; color: #fff;
+    font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    padding: 16px; user-select: none; -webkit-user-select: none;
+  }
+  .tabs { display: flex; gap: 8px; }
+  .tabs button {
+    background: #222; color: #ccc; border: 1px solid #333; border-radius: 20px;
+    padding: 8px 18px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .tabs button.active { background: var(--green600); color: #fff; border-color: var(--green600); }
+
+  /* Landscape phone frame (app is locked to landscape) */
+  .stage { width: 100%; display: flex; justify-content: center; }
+  .device {
+    width: 844px; height: 390px; flex-shrink: 0;
+    border-radius: 36px; border: 10px solid #000; outline: 2px solid #333;
+    overflow: hidden; position: relative; background: #000;
+    transform-origin: top center;
+  }
+  .screen { position: absolute; inset: 0; display: none; }
+  .screen.active { display: block; }
+
+  /* ---------- HOME / CONNECT SCREEN ---------- */
+  #home {
+    background: linear-gradient(135deg, var(--green900), var(--teal900) 50%, var(--blue900));
+    background-size: 200% 200%; animation: bgShift 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgShift { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+  .home-scroll { height: 100%; overflow-y: auto; padding: 24px; }
+  .home-scroll::-webkit-scrollbar { width: 0; }
+  .home-col { display: flex; flex-direction: column; align-items: center; max-width: 620px; margin: 0 auto; }
+  .hero-icon {
+    margin-top: 30px; width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(102,187,106,.9), rgba(0,137,123,.7), rgba(25,118,210,.5));
+    box-shadow: 0 0 25px 5px rgba(76,175,80,.5);
+    display: grid; place-items: center; animation: wobble 2s linear infinite;
+  }
+  .hero-icon .material-icons { font-size: 70px; }
+  @keyframes wobble { 0% { transform: rotate(0); } 100% { transform: rotate(.05rad); } }
+  h1 {
+    margin: 20px 0 8px; font-size: 32px; letter-spacing: 3px; text-align: center;
+    text-shadow: 0 0 15px rgba(76,175,80,.6);
+  }
+  .subtitle { color: rgba(255,255,255,.7); font-size: 16px; text-align: center; margin: 0 0 35px; }
+  .card {
+    width: 100%; padding: 22px; border-radius: 25px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 0 25px 5px rgba(0,0,0,.3);
+  }
+  .card-title { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+  .field { margin: 12px 0; }
+  .field-box {
+    display: flex; align-items: center; gap: 12px; padding: 0 20px; height: 56px;
+    border-radius: 18px; background: rgba(255,255,255,.08); border: 2px solid transparent;
+    box-shadow: 0 0 12px 1px rgba(76,175,80,.2); position: relative;
+  }
+  .field-box:focus-within { border-color: var(--green400); }
+  .field-box .material-icons { color: var(--green400); }
+  .field-box label {
+    position: absolute; left: 56px; top: 50%; transform: translateY(-50%);
+    color: var(--green300); font-size: 16px; pointer-events: none; transition: .15s;
+  }
+  .field-box input {
+    flex: 1; background: none; border: 0; outline: 0; color: #fff; font: inherit; font-size: 16px;
+    padding-top: 14px; user-select: text;
+  }
+  .field-box input:focus + label, .field-box input:not(:placeholder-shown) + label { top: 14px; font-size: 12px; }
+  .helper { color: var(--green200); font-size: 12px; margin: 6px 0 0 20px; }
+
+  .row { display: flex; gap: 12px; align-items: center; }
+  .btn {
+    border: 0; cursor: pointer; font: inherit; font-weight: bold; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn:disabled { cursor: default; opacity: .6; }
+  .btn-test {
+    flex: 1; height: 52px; border-radius: 26px; color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3);
+  }
+  .btn-adv {
+    height: 52px; padding: 0 20px; border-radius: 26px; color: var(--blue300);
+    background: rgba(33,150,243,.2); border: 1px solid rgba(33,150,243,.5);
+  }
+  .btn-adv .material-icons { font-size: 16px; }
+  .advanced {
+    margin-top: 15px; padding: 15px; border-radius: 12px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  }
+  .advanced h3 { margin: 0 0 12px; font-size: 16px; }
+  .advanced p { margin: 0; color: rgba(255,255,255,.7); font-size: 12px; }
+  .btn-connect {
+    width: 100%; height: 65px; margin: 20px 0; border-radius: 32px; font-size: 16px;
+    background: linear-gradient(90deg, var(--green600), var(--teal600));
+    box-shadow: 0 0 20px 3px rgba(76,175,80,.6); transition: transform .2s;
+  }
+  .btn-connect.connecting {
+    background: linear-gradient(90deg, var(--orange600), var(--red600));
+    box-shadow: 0 0 20px 3px rgba(255,152,0,.6); transform: scale(.95); opacity: 1;
+  }
+  .spinner {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,.3); border-top-color: #fff; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .msg { margin-top: 12px; padding: 15px; border-radius: 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .msg.error { background: rgba(244,67,54,.15); border: 1px solid rgba(244,67,54,.4); }
+  .msg.error .material-icons, .msg.error b { color: var(--red300); }
+  .msg.error span.t { color: var(--red200); font-size: 13px; white-space: pre-line; }
+  .msg.info { background: rgba(33,150,243,.1); border: 1px solid rgba(33,150,243,.3); color: var(--blue300); }
+  .msg.info .material-icons { font-size: 20px; }
+  .msg.info span.t { font-family: monospace; font-size: 12px; white-space: pre-line; }
+  .guide {
+    width: 100%; margin-top: 25px; padding: 18px; border-radius: 15px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  }
+  .guide-title { display: flex; gap: 10px; align-items: center; color: var(--orange300); font-weight: bold; font-size: 18px; margin-bottom: 15px; }
+  .guide-item { display: flex; align-items: center; gap: 12px; padding: 6px 0; color: rgba(255,255,255,.7); font-size: 14px; }
+  .guide-item .material-icons { font-size: 16px; color: rgba(255,255,255,.6); margin-right: -4px; }
+  .num {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--green600); color: #fff;
+    display: grid; place-items: center; font-size: 12px; font-weight: bold; flex-shrink: 0;
+  }
+  .features {
+    margin: 25px 0 0; padding: 12px; border-radius: 10px; text-align: center; font-size: 12px;
+    color: var(--green300); background: rgba(76,175,80,.1); border: 1px solid rgba(76,175,80,.3);
+  }
+
+  /* Dialog + snackbar (shared) */
+  .dialog-back { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: none; place-items: center; z-index: 20; }
+  .dialog-back.show { display: grid; }
+  .dialog {
+    width: 420px; max-height: 330px; overflow-y: auto; background: #424242; border-radius: 28px; padding: 22px 24px 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  }
+  .dialog h2 { display: flex; gap: 8px; align-items: center; font-size: 20px; margin: 0 0 14px; font-weight: 500; }
+  .dialog h2 .material-icons { color: var(--orange500); }
+  .dialog p, .dialog li { font-size: 14px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 12px; }
+  .dialog-actions button { background: none; border: 0; color: #80CBC4; font: inherit; font-weight: 500; padding: 10px 12px; cursor: pointer; border-radius: 20px; }
+  .dialog-actions button:hover { background: rgba(128,203,196,.1); }
+  .snackbar {
+    position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 100%); z-index: 30;
+    min-width: 340px; padding: 14px 16px; border-radius: 4px 4px 0 0; font-size: 14px;
+    display: flex; gap: 8px; align-items: center; transition: transform .25s;
+  }
+  .snackbar.show { transform: translate(-50%, 0); }
+
+  /* ---------- GAMEPAD SCREEN ---------- */
+  #pad { background: var(--pad-bg); display: none; flex-direction: column; }
+  #pad.active { display: flex; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+  .top-side { flex: 1; display: flex; gap: 10px; align-items: center; }
+  .top-side.right { justify-content: flex-end; }
+  .top-center { flex: 2; display: flex; gap: 8px; justify-content: center; align-items: center; }
+  .status {
+    margin-top: 8px; padding: 8px 16px; border-radius: 20px; display: flex; gap: 10px; align-items: center;
+    font-size: 12px; font-weight: bold;
+    background: linear-gradient(90deg, rgba(76,175,80,.2), rgba(0,150,136,.2));
+    border: 1.5px solid rgba(76,175,80,.6); box-shadow: 0 0 8px 1px rgba(76,175,80,.3);
+  }
+  .status .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--green500); box-shadow: 0 0 6px 2px rgba(76,175,80,.8); transition: .3s; }
+  .status .material-icons { font-size: 14px; color: var(--yellow600); }
+  .status.off { background: linear-gradient(90deg, rgba(244,67,54,.2), rgba(255,152,0,.2)); border-color: rgba(244,67,54,.6); box-shadow: 0 0 8px 1px rgba(244,67,54,.3); }
+  .status.off .dot { background: var(--red500); box-shadow: 0 0 6px 2px rgba(244,67,54,.8); }
+  .perf {
+    margin-top: 6px; padding: 6px 12px; border-radius: 15px; display: flex; gap: 6px; align-items: center;
+    color: var(--blue300); font: 500 10px monospace;
+    background: linear-gradient(90deg, rgba(33,150,243,.1), rgba(0,188,212,.1)); border: 1px solid rgba(33,150,243,.4);
+  }
+  .perf .material-icons { font-size: 12px; }
+
+  .press { cursor: pointer; transition: all .1s; touch-action: none; }
+  .trigger {
+    width: 80px; height: 50px; border-radius: 25px 25px 15px 15px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(var(--grey700), var(--grey800)); border: 1px solid rgba(255,255,255,.2);
+    box-shadow: 0 4px 8px 1px rgba(0,0,0,.5); font-weight: bold; font-size: 16px; text-shadow: 0 0 2px rgba(0,0,0,.7);
+  }
+  .trigger .bar { display: none; width: 30px; height: 4px; margin-top: 4px; border-radius: 2px; background: var(--orange300); box-shadow: 0 0 4px rgba(255,152,0,.6); }
+  .trigger.on { background: linear-gradient(var(--orange500), var(--orange700)); box-shadow: 0 2px 15px 3px rgba(255,152,0,.8); }
+  .trigger.on .bar { display: block; }
+  .shoulder {
+    width: 60px; height: 35px; border-radius: 18px; display: grid; place-items: center;
+    background: linear-gradient(var(--grey700), var(--grey800)); border: .5px solid rgba(255,255,255,.2);
+    box-shadow: 0 3px 6px 1px rgba(0,0,0,.4); font-weight: bold; font-size: 14px; text-shadow: 0 0 2px rgba(0,0,0,.7);
+  }
+  .shoulder.on { background: linear-gradient(var(--grey600), var(--grey500)); box-shadow: 0 1px 10px 2px rgba(158,158,158,.7); }
+  .cool { border: 1.5px solid rgba(244,67,54,.6) !important; }
+
+  .pad-main { flex: 1; display: flex; }
+  .pad-left { flex: 3; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; }
+  .pad-center { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .pad-right { flex: 3; display: flex; justify-content: space-evenly; align-items: center; }
+  .group { display: flex; flex-direction: column; align-items: center; }
+  .lbl { color: var(--green300); font-size: 11px; font-weight: bold; letter-spacing: 1.2px; margin-bottom: 8px; }
+
+  .joy {
+    width: 130px; height: 130px; border-radius: 50%; position: relative; touch-action: none; cursor: grab;
+    background: linear-gradient(135deg, rgba(0,0,0,.4), rgba(33,33,33,.3));
+    border: 3px solid rgba(76,175,80,.8); box-shadow: 0 3px 15px 2px rgba(76,175,80,.3);
+  }
+  .joy .stick {
+    position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%;
+    background: var(--green400); box-shadow: 0 0 10px rgba(76,175,80,.6); pointer-events: none;
+  }
+
+  .dpad { width: 160px; height: 100px; position: relative; }
+  .dpad .d {
+    position: absolute; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(90deg, var(--grey700), var(--grey800)); border: .5px solid rgba(255,255,255,.1);
+    box-shadow: 0 2px 8px 1px rgba(0,0,0,.26);
+  }
+  .dpad .d .material-icons { font-size: 20px; }
+  .dpad .d.on { background: linear-gradient(90deg, var(--green600), var(--green500)); box-shadow: 0 0 12px 3px rgba(76,175,80,.7); }
+
+  .actions { width: 175px; height: 175px; position: relative; }
+  .act {
+    position: absolute; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: bold; font-size: 12px; text-shadow: 0 0 2px rgba(0,0,0,.7);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--c) 90%, transparent), color-mix(in srgb, var(--c) 60%, transparent));
+    border: 1px solid rgba(255,255,255,.2);
+    box-shadow: 0 3px 15px 2px color-mix(in srgb, var(--c) 60%, transparent);
+  }
+  .act.on { background: radial-gradient(var(--c), color-mix(in srgb, var(--c) 70%, transparent)); box-shadow: 0 0 20px 5px color-mix(in srgb, var(--c) 80%, transparent); }
+  .act.cool { box-shadow: 0 3px 5px color-mix(in srgb, var(--c) 20%, transparent); border-width: 2px !important; }
+
+  .sys-row, .quick-row { display: flex; justify-content: center; }
+  .sys-row { gap: 20px; }
+  .quick-row { gap: 15px; }
+  .sys {
+    width: 55px; height: 55px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--grey700), var(--grey800)); border: 1px solid rgba(255,255,255,.2);
+    box-shadow: 0 3px 6px 1px rgba(0,0,0,.4);
+  }
+  .sys .material-icons { font-size: 20px; }
+  .sys small { font-size: 8px; font-weight: 500; color: rgba(255,255,255,.7); }
+  .sys.on { background: linear-gradient(135deg, var(--grey600), var(--grey500)); box-shadow: 0 1px 10px 2px rgba(255,255,255,.4); }
+  .appeal {
+    margin: 27px 0; padding: 15px 30px; border-radius: 30px; display: flex; gap: 10px; align-items: center;
+    background: linear-gradient(90deg, var(--orange600), var(--red500)); border: 1px solid rgba(255,255,255,.3);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .appeal .material-icons { font-size: 24px; }
+  .appeal b { font-size: 18px; text-shadow: 0 0 2px rgba(0,0,0,.7); display: block; }
+  .appeal small { display: block; text-align: center; color: var(--red300); font-size: 12px; font-weight: bold; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px 4px rgba(255,152,0,.7); }
+    50% { box-shadow: 0 0 20px 4px rgba(244,67,54,.7); }
+  }
+  .appeal.cool { animation: none; background: linear-gradient(90deg, var(--grey800), var(--grey900)); border: 2px solid rgba(244,67,54,.6); box-shadow: 0 0 5px rgba(158,158,158,.3); color: #BDBDBD; cursor: default; }
+  .quick {
+    padding: 10px 16px; border-radius: 20px; display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: bold;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 80%, transparent), color-mix(in srgb, var(--c) 60%, transparent));
+    border: 1px solid rgba(255,255,255,.2); box-shadow: 0 3px 8px 1px color-mix(in srgb, var(--c) 40%, transparent);
+  }
+  .quick .material-icons { font-size: 16px; }
+  .quick.on { background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 80%, transparent)); box-shadow: 0 1px 12px 2px color-mix(in srgb, var(--c) 80%, transparent); }
+
+  .log {
+    width: 844px; max-width: 100%; height: 90px; overflow-y: auto; background: #000; border: 1px solid #333; border-radius: 8px;
+    padding: 8px 12px; font: 11px/1.5 monospace; color: var(--green300);
+  }
+  .log:empty::before { content: "Messages the app would send to the server appear here."; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button data-go="home" class="active">Connect screen</button>
+  <button data-go="pad">Gamepad screen</button>
+</div>
+
+<div class="stage"><div class="device" id="device">
+
+  <!-- ===== HOME / CONNECT ===== -->
+  <section class="screen active" id="home">
+    <div class="home-scroll"><div class="home-col">
+      <div class="hero-icon"><span class="material-icons">sports_cricket</span></div>
+      <h1>CRICKET 24 GAMEPAD</h1>
+      <p class="subtitle">Ultra-responsive wireless controller for Cricket 24</p>
+
+      <div class="card">
+        <div class="card-title"><span class="material-icons" style="color:var(--orange400)">sports_cricket</span>Cricket 24 Server Connection</div>
+
+        <div class="field">
+          <div class="field-box">
+            <span class="material-icons">computer</span>
+            <input id="ip" placeholder=" " inputmode="decimal" autocomplete="off">
+            <label for="ip">Cricket Server IP Address</label>
+          </div>
+          <div class="helper">Get from server output (e.g. 192.168.1.100)</div>
+        </div>
+        <div class="field">
+          <div class="field-box">
+            <span class="material-icons">settings_ethernet</span>
+            <input id="port" placeholder=" " inputmode="numeric" value="8080">
+            <label for="port">Server Port</label>
+          </div>
+          <div class="helper">Default Cricket server port: 8080</div>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-test" id="testBtn"><span class="material-icons">network_ping</span>TEST CRICKET SERVER</button>
+          <button class="btn btn-adv" id="advBtn"><span class="material-icons">settings</span>ADVANCED</button>
+        </div>
+
+        <div class="advanced" id="advanced" hidden>
+          <h3>Advanced Cricket Settings</h3>
+          <p>Button Response: Ultra-Fast (25ms minimum)</p>
+          <p>Network Mode: Cricket 24 Optimized</p>
+          <p>Anti-Repeat: Enabled (50ms cooldown)</p>
+          <p>Joystick Rate: 60fps (16ms throttle)</p>
+        </div>
+
+        <button class="btn btn-connect" id="connectBtn"></button>
+
+        <div class="msg error" id="errorBox" hidden>
+          <span class="material-icons">error_outline</span>
+          <div><b style="font-size:14px">Cricket 24 Connection Failed</b><br><span class="t" id="errorText"></span></div>
+        </div>
+        <div class="msg info" id="debugBox" hidden>
+          <span class="material-icons">info_outline</span><span class="t" id="debugText"></span>
+        </div>
+      </div>
+
+      <div class="guide">
+        <div class="guide-title"><span class="material-icons">sports_cricket</span>Cricket 24 Setup Guide</div>
+        <div class="guide-item"><span class="num">1</span><span class="material-icons">download</span>Install Python + vgamepad</div>
+        <div class="guide-item"><span class="num">2</span><span class="material-icons">play_arrow</span>Run Cricket server script</div>
+        <div class="guide-item"><span class="num">3</span><span class="material-icons">content_copy</span>Copy IP from server output</div>
+        <div class="guide-item"><span class="num">4</span><span class="material-icons">network_ping</span>Test connection first</div>
+        <div class="guide-item"><span class="num">5</span><span class="material-icons">security</span>Allow firewall access</div>
+        <div class="guide-item"><span class="num">6</span><span class="material-icons">sports_esports</span>Connect and play!</div>
+      </div>
+
+      <div class="features">Cricket 24 Features: Anti-repeat protection, Enhanced timing, Ultra-low latency</div>
+    </div></div>
+  </section>
+
+  <!-- ===== GAMEPAD ===== -->
+  <section class="screen" id="pad">
+    <div class="top-bar">
+      <div class="top-side">
+        <div class="press trigger" data-trigger="LT">LT<span class="bar"></span></div>
+        <div class="press shoulder" data-btn="LB">LB</div>
+      </div>
+      <div class="top-center">
+        <div class="status" id="status"><span class="dot"></span><span id="statusText">Cricket Player 1</span><span class="material-icons" id="flash">flash_on</span></div>
+        <div class="perf"><span class="material-icons">speed</span><span id="perfText">0.0/s • 0 sent</span></div>
+      </div>
+      <div class="top-side right">
+        <div class="press shoulder" data-btn="RB">RB</div>
+        <div class="press trigger" data-trigger="RT">RT<span class="bar"></span></div>
+      </div>
+    </div>
+
+    <div class="pad-main">
+      <div class="pad-left">
+        <div class="group"><div class="lbl">MOVEMENT</div><div class="joy" data-joy="left"><div class="stick"></div></div></div>
+        <div class="group"><div class="lbl" style="margin:0">D-PAD</div>
+          <div class="dpad">
+            <div class="press d" data-btn="UP" style="top:0;left:50px"><span class="material-icons">keyboard_arrow_up</span></div>
+            <div class="press d" data-btn="DOWN" style="bottom:0;left:50px"><span class="material-icons">keyboard_arrow_down</span></div>
+            <div class="press d" data-btn="LEFT" style="left:0;top:50px"><span class="material-icons">keyboard_arrow_left</span></div>
+            <div class="press d" data-btn="RIGHT" style="right:15px;top:50px"><span class="material-icons">keyboard_arrow_right</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pad-center">
+        <div class="sys-row">
+          <div class="press sys" data-tap="VIEW"><span class="material-icons">visibility</span><small>Menu</small></div>
+          <div class="press sys" data-tap="MENU"><span class="material-icons">menu</span><small>Options</small></div>
+        </div>
+        <div class="press appeal" id="appeal">
+          <span class="material-icons">sports_cricket</span>
+          <div><b>DRS APPEAL</b><small id="appealCd" hidden></small></div>
+        </div>
+        <div class="quick-row">
+          <div class="press quick" data-tap="PAUSE" style="--c:var(--blue700)"><span class="material-icons">pause</span>PAUSE</div>
+          <div class="press quick" data-tap="BACK" style="--c:var(--purple700)"><span class="material-icons">arrow_back</span>BACK</div>
+        </div>
+      </div>
+
+      <div class="pad-right">
+        <div class="group"><div class="lbl">CAMERA</div><div class="joy" data-joy="right"><div class="stick"></div></div></div>
+        <div class="group"><div class="lbl" style="margin-bottom:5px">ACTIONS</div>
+          <div class="actions">
+            <div class="press act" data-btn="Y" style="--c:var(--yellow600);top:0;left:50px">Y</div>
+            <div class="press act" data-btn="X" style="--c:var(--blue600);left:0;top:50px">X</div>
+            <div class="press act" data-btn="B" style="--c:var(--red600);right:10px;top:50px">B</div>
+            <div class="press act" data-tap="A" style="--c:var(--green600);bottom:10px;left:50px">A</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="height:10px"></div>
+  </section>
+
+  <!-- shared overlays -->
+  <div class="dialog-back" id="dialogBack"><div class="dialog" id="dialog"></div></div>
+  <div class="snackbar" id="snack"></div>
+</div></div>
+
+<div class="log" id="log"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+// ---------- device scaling to fit viewport ----------
+const device = $('#device');
+function fit() {
+  const s = Math.min(1, (innerWidth - 32) / 864);
+  device.style.transform = `scale(${s})`;
+  device.parentElement.style.height = (410 * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+// ---------- navigation ----------
+function show(id) {
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  $$('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.go === id));
+  if (id === 'pad') startSession();
+}
+$$('.tabs button').forEach(b => b.onclick = () => show(b.dataset.go));
+
+// ---------- snackbar / dialog ----------
+let snackTimer;
+function snack(html, color, ms = 4000) {
+  const el = $('#snack');
+  el.innerHTML = html; el.style.background = color; el.classList.add('show');
+  clearTimeout(snackTimer); snackTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+function dialog(html) { $('#dialog').innerHTML = html; $('#dialogBack').classList.add('show'); }
+function closeDialog() { $('#dialogBack').classList.remove('show'); }
+
+// ---------- HOME ----------
+// The real app opens a raw TCP socket; browsers can't, so connect/test are simulated.
+const ipEl = $('#ip'), portEl = $('#port'), connectBtn = $('#connectBtn');
+const IP_RE = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+let connecting = false;
+
+function renderConnect() {
+  connectBtn.classList.toggle('connecting', connecting);
+  connectBtn.disabled = connecting;
+  $('#testBtn').disabled = connecting;
+  connectBtn.innerHTML = connecting
+    ? '<span class="spinner"></span>CONNECTING TO CRICKET SERVER...'
+    : '<span class="material-icons">sports_cricket</span>CONNECT TO CRICKET 24 SERVER';
+}
+function setError(t) { $('#errorBox').hidden = !t; $('#errorText').textContent = t || ''; }
+function setDebug(t) { $('#debugBox').hidden = !t; $('#debugText').textContent = t || ''; }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+function validate() {
+  const ip = ipEl.value.trim(), port = parseInt(portEl.value.trim()) || 8080;
+  if (!ip) { setError('Enter the Cricket server IP address'); setDebug('Server IP required for Cricket 24 connection'); return null; }
+  if (!IP_RE.test(ip)) { setError('Invalid IP format. Use: 192.168.1.100'); setDebug('Cricket requires valid IPv4 format: ' + ip); return null; }
+  if (port < 1024 || port > 65535) { setError('Port must be between 1024-65535'); setDebug('Cricket server port out of range: ' + port); return null; }
+  return { ip, port };
+}
+
+connectBtn.onclick = async () => {
+  if (connecting) return;
+  const t = validate(); if (!t) return;
+  connecting = true; setError(null); renderConnect();
+  setDebug(`Connecting to Cricket 24 server at ${t.ip}:${t.port}...`);
+  for (const s of ['Step 1: Cricket server connection established!', 'Step 2: Cricket connection optimized for low latency',
+                   'Step 3: Cricket handshake sent successfully', 'Step 3: Cricket server ready for gameplay',
+                   'Step 4: Launching Cricket 24 gamepad interface...']) { await wait(450); setDebug(s); }
+  await wait(300);
+  connecting = false; renderConnect(); setDebug('');
+  show('pad');
+};
+
+$('#testBtn').onclick = async () => {
+  const ip = ipEl.value.trim(), port = parseInt(portEl.value.trim()) || 8080;
+  if (!ip || !IP_RE.test(ip)) { setDebug('Enter valid Cricket server IP first (e.g., 192.168.1.100)'); return; }
+  setDebug(`Testing Cricket 24 server at ${ip}:${port}...`);
+  for (const s of ['Cricket Test 1: Checking server availability...', 'Cricket Test 1: SUCCESS - Server is responding!',
+                   'Cricket Test 2: Server communication verified!', 'ALL CRICKET TESTS PASSED! Ready for Cricket 24 gameplay.']) { await wait(500); setDebug(s); }
+};
+
+$('#advBtn').onclick = () => { const a = $('#advanced'); a.hidden = !a.hidden; };
+renderConnect();
+
+// ---------- GAMEPAD ----------
+const MIN_PRESS = 25, MIN_GAP = 50, SHOT_CD = 200, APPEAL_CD = 1000, DEADZONE = 0.15;
+const lastPress = {}, active = {};
+let sent = 0, sessionStart = Date.now(), connected = true;
+const cooldownFor = b => b === 'A' || b === 'SHOT' ? SHOT_CD : b === 'APPEAL' ? APPEAL_CD : MIN_GAP;
+const onCooldown = b => lastPress[b] && Date.now() - lastPress[b] < cooldownFor(b);
+
+const logEl = $('#log');
+function send(msg) {
+  if (!connected) return;
+  sent++;
+  const line = document.createElement('div');
+  line.textContent = JSON.stringify({ player: 'cricket_player', ...msg, game: 'cricket24', timestamp: Date.now() });
+  logEl.prepend(line);
+  if (logEl.children.length > 60) logEl.lastChild.remove();
+}
+function vibrate(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
+
+function flashCooldown(el, b) {
+  el.classList.add('cool');
+  setTimeout(() => el.classList.remove('cool'), cooldownFor(b));
+}
+
+// hold buttons (press/release)
+$$('[data-btn]').forEach(el => {
+  const b = el.dataset.btn;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(b) || active[b]) return;
+    active[b] = Date.now(); lastPress[b] = Date.now();
+    el.classList.add('on'); send({ button: b, type: 'press' }); vibrate(30); flashCooldown(el, b);
+  });
+  const up = () => {
+    if (!active[b]) return;
+    const held = Date.now() - active[b];
+    setTimeout(() => { active[b] = 0; el.classList.remove('on'); send({ button: b, type: 'release' }); }, Math.max(0, MIN_PRESS - held));
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+// tap buttons (single-frame)
+$$('[data-tap]').forEach(el => {
+  const b = el.dataset.tap;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (!connected || onCooldown(b)) return;
+    lastPress[b] = Date.now();
+    send({ button: b, type: 'tap' }); vibrate(b === 'A' ? 40 : 30);
+    el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 100);
+    if (el.classList.contains('act')) flashCooldown(el, b);
+  });
+});
+
+// triggers
+$$('[data-trigger]').forEach(el => {
+  const t = el.dataset.trigger;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(t)) return;
+    lastPress[t] = Date.now(); el.classList.add('on');
+    send({ trigger: t, value: 1.0, type: 'trigger_press' }); vibrate(60);
+  });
+  const up = () => { if (!el.classList.contains('on')) return; el.classList.remove('on'); send({ trigger: t, value: 0.0, type: 'trigger_release' }); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+// DRS appeal with 1s cooldown + countdown
+const appeal = $('#appeal'), appealCd = $('#appealCd');
+appeal.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!connected) return;
+  if (onCooldown('APPEAL')) {
+    snack(`Appeal cooldown: ${((APPEAL_CD - (Date.now() - lastPress.APPEAL)) / 1000).toFixed(1)}s`, 'var(--green600)', 2000);
+    return;
+  }
+  lastPress.APPEAL = Date.now();
+  send({ button: 'APPEAL', type: 'tap', priority: 'high' }); vibrate([80, 50, 60]);
+  snack('<span class="material-icons">sports_cricket</span>DRS Appeal Sent!', 'var(--orange700)', 1000);
+  appeal.classList.add('cool'); appealCd.hidden = false;
+  const tick = () => {
+    const left = APPEAL_CD - (Date.now() - lastPress.APPEAL);
+    if (left <= 0) { appeal.classList.remove('cool'); appealCd.hidden = true; return; }
+    appealCd.textContent = (left / 1000).toFixed(1) + 's'; requestAnimationFrame(tick);
+  };
+  tick();
+});
+
+// joysticks
+$$('[data-joy]').forEach(base => {
+  const id = base.dataset.joy, stick = $('.stick', base);
+  let last = { x: 0, y: 0 }, lastSend = 0;
+  const emit = (x, y) => {
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+    if (Math.abs(x - last.x) < 0.05 && Math.abs(y - last.y) < 0.05) return;
+    if ((x || y) && Date.now() - lastSend < 16) return;
+    last = { x, y }; lastSend = Date.now();
+    send({ joystick: id, x: x.toFixed(3), y: y.toFixed(3) });
+  };
+  const move = e => {
+    const r = base.getBoundingClientRect(), rad = r.width / 2;
+    let dx = e.clientX - (r.left + rad), dy = e.clientY - (r.top + rad);
+    const d = Math.hypot(dx, dy), max = rad - 25 * (r.width / 130);
+    if (d > max) { dx *= max / d; dy *= max / d; }
+    const scale = r.width / base.offsetWidth; // undo device scale for transform
+    stick.style.transform = `translate(${dx / scale}px, ${dy / scale}px)`;
+    emit(dx / max, dy / max);
+  };
+  base.addEventListener('pointerdown', e => { base.setPointerCapture(e.pointerId); move(e); });
+  base.addEventListener('pointermove', e => { if (base.hasPointerCapture(e.pointerId)) move(e); });
+  const reset = () => { stick.style.transform = ''; emit(0, 0); };
+  base.addEventListener('pointerup', reset); base.addEventListener('pointercancel', reset);
+});
+
+// status + perf indicator
+function startSession() {
+  connected = true; sessionStart = Date.now(); sent = 0;
+  $('#status').classList.remove('off'); $('#statusText').textContent = 'Cricket Player 1'; $('#flash').hidden = false;
+}
+setInterval(() => {
+  const s = (Date.now() - sessionStart) / 1000;
+  $('#perfText').textContent = `${(s > 1 ? sent / s : 0).toFixed(1)}/s • ${sent} sent`;
+}, 500);
+
+// demo: long-press the status pill to preview the "connection lost" state
+let lpTimer;
+$('#status').addEventListener('pointerdown', () => lpTimer = setTimeout(loseConnection, 700));
+$('#status').addEventListener('pointerup', () => clearTimeout(lpTimer));
+function loseConnection() {
+  if (!connected) return;
+  connected = false;
+  $('#status').classList.add('off'); $('#statusText').textContent = 'Cricket Disconnected'; $('#flash').hidden = true;
+  snack('Cricket 24: Cricket connection lost', 'var(--red600)');
+  setTimeout(() => dialog(`
+    <h2><span class="material-icons">sports_cricket</span>Cricket 24 Connection Lost</h2>
+    <p>Lost connection to Cricket 24 server.</p>
+    <p><b>Session Stats:</b><br>• Duration: ${Math.floor((Date.now() - sessionStart) / 60000)} minutes<br>• Messages sent: ${sent}<br>• Messages received: 1</p>
+    <p>Check server and restart if needed.</p>
+    <div class="dialog-actions"><button id="backSetup">Back to Setup</button></div>`), 800);
+}
+$('#dialog').addEventListener('click', e => { if (e.target.id === 'backSetup') { closeDialog(); show('home'); } });
+</script>
+</body>
+</html>

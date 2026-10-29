@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cricket 24 Pad Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Saira+Condensed:wght@600;700&family=Saira:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<style>
+/* ================= Page chrome (not part of the app) ================= */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: #1C1C21; color: #E6E6EA; min-height: 100vh;
+  font: 14px/1.4 system-ui, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px;
+}
+.chrome { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: center; align-items: center; }
+.seg { display: flex; background: #2A2A31; border-radius: 10px; padding: 3px; }
+.seg button {
+  background: none; border: 0; color: #A9A9B3; font: inherit; font-weight: 500;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: #44444E; color: #fff; }
+.seg-label { color: #8A8A94; font-size: 12px; margin-right: 8px; }
+.concept-note { max-width: 844px; text-align: center; color: #A9A9B3; margin: 0; min-height: 2.8em; }
+.concept-note b { color: #fff; font-weight: 600; }
+
+.stage { width: 100%; display: flex; justify-content: center; }
+.device {
+  width: 844px; height: 390px; flex-shrink: 0; position: relative; overflow: hidden;
+  border-radius: 38px; border: 10px solid #000; box-shadow: 0 0 0 2px #3A3A42, 0 30px 60px rgba(0,0,0,.45);
+  transform-origin: top center; user-select: none; -webkit-user-select: none;
+}
+.log {
+  width: 844px; max-width: 100%; height: 76px; overflow-y: auto; border-radius: 10px;
+  background: #121216; border: 1px solid #2E2E36; padding: 8px 12px;
+  font: 11px/1.5 ui-monospace, Consolas, monospace; color: #8FD1A6;
+}
+.log:empty::before { content: "Messages the controller sends to your PC show up here."; color: #5E5E68; font-family: system-ui, sans-serif; }
+
+/* ================= App: theme tokens ================= */
+.device[data-theme="flood"] {
+  --bg: #0B1631; --surface: #12224A; --raised: #1A2D5C; --well: #081128; --line: #2A3F74;
+  --ink: #F2F5FA; --muted: #93A3C6; --accent: #FFB020; --accent-ink: #1F1400;
+  --ok: #3DDC97; --bad: #FF7A6B; --stick: #E9EEF7;
+  --a: #4CC38A; --b: #F0645A; --x: #4C9BF0; --y: #F2C94C;
+  --f-display: "Barlow Condensed", sans-serif; --f-body: "Barlow", sans-serif;
+  --r-lg: 14px; --r-sm: 10px;
+}
+.device[data-theme="console"] {
+  --bg: #23262A; --surface: #2B2F34; --raised: #383D43; --well: #1B1E21; --line: #43494F;
+  --ink: #ECEEF0; --muted: #9AA1A9; --accent: #ECEEF0; --accent-ink: #1B1E21;
+  --ok: #7BC96F; --bad: #E8766F; --stick: #464C53;
+  --a: #7BC96F; --b: #E8766F; --x: #5E9DE6; --y: #E9C95A;
+  --f-display: "Manrope", sans-serif; --f-body: "Manrope", sans-serif;
+  --r-lg: 22px; --r-sm: 14px;
+}
+.device[data-theme="broadcast"] {
+  --bg: #140B33; --surface: #1F1452; --raised: #2C1D6E; --well: #0D0724; --line: #43309A;
+  --ink: #FFFFFF; --muted: #B9AFE6; --accent: #00E0C6; --accent-ink: #04201D; --hot: #FF2E88;
+  --ok: #00E0C6; --bad: #FF5C8A; --stick: #FF2E88;
+  --a: #00E0C6; --b: #FF2E88; --x: #5B8CFF; --y: #FFD23F;
+  --f-display: "Saira Condensed", sans-serif; --f-body: "Saira", sans-serif;
+  --r-lg: 0; --r-sm: 0;
+}
+
+/* ================= App: shared structure ================= */
+.screen { position: absolute; inset: 0; display: none; background: var(--bg); color: var(--ink); font-family: var(--f-body); }
+.screen.active { display: block; }
+:where(.device) button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; touch-action: none; }
+.device button:focus-visible, .device input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.material-icons-round { font-size: 20px; line-height: 1; }
+.device [hidden] { display: none !important; }
+
+/* ---- Connect screen ---- */
+.home { height: 100%; overflow-y: auto; display: grid; grid-template-columns: 1fr 360px; gap: 36px; padding: 24px 36px; align-items: center; }
+.home::-webkit-scrollbar { width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-ink); }
+.brand-name { font-family: var(--f-display); font-weight: 700; font-size: 18px; letter-spacing: .02em; }
+.home h1 { font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1.05; margin: 0 0 8px; max-width: 15ch; }
+.lead { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0 0 16px; max-width: 40ch; }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: grid; gap: 8px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 26px 1fr; gap: 0 12px; font-size: 14px; }
+.steps li::before {
+  content: counter(s); grid-row: span 2; width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: 50%; border: 1.5px solid var(--line); color: var(--muted); font-weight: 600; font-size: 13px;
+}
+.steps b { font-weight: 600; }
+.steps span { color: var(--muted); }
+.steps code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--ink); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; }
+.panel h2 { font-family: var(--f-display); font-weight: 700; font-size: 20px; margin: 0 0 16px; }
+.field { display: block; margin-bottom: 12px; }
+.field > span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.field input {
+  width: 100%; height: 46px; padding: 0 14px; font: 500 16px var(--f-body); color: var(--ink);
+  background: var(--well); border: 1px solid var(--line); border-radius: var(--r-sm); user-select: text;
+}
+.field input::placeholder { color: color-mix(in srgb, var(--muted) 55%, transparent); }
+.field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.field input[aria-invalid="true"] { border-color: var(--bad); }
+.field-row { display: flex; gap: 10px; align-items: flex-end; }
+.field-row .field { width: 104px; flex-shrink: 0; margin-bottom: 0; }
+.btn-primary {
+  flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent) !important; color: var(--accent-ink) !important; border-radius: var(--r-sm);
+  font-family: var(--f-display) !important; font-weight: 700 !important; font-size: 17px !important;
+}
+.btn-primary:disabled { cursor: progress; }
+.msg { min-height: 20px; margin: 12px 0 0; font-size: 13px; display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.msg .material-icons-round { font-size: 17px; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--ok); }
+.spinner { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
+.btn-primary .spinner { margin: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.form-foot { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.btn-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted) !important; font-size: 13px !important; font-weight: 500 !important; }
+.btn-link:hover { color: var(--ink) !important; }
+.btn-link .material-icons-round { font-size: 17px; }
+.btn-link[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.settings { margin: 12px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; }
+.settings dt { color: var(--muted); }
+.settings dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ---- Gamepad screen ---- */
+#pad { display: none; flex-direction: column; }
+#pad.active { display: flex; }
+.pad-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px 0; }
+.shoulders { display: flex; gap: 10px; align-items: center; width: 200px; }
+.shoulders.right { justify-content: flex-end; }
+.trig, .bump, .sys, .quick, .d, .fb {
+  background: var(--raised); border: 1px solid var(--line); display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--f-display) !important; font-weight: 700 !important; transition: background .08s, color .08s, transform .08s, opacity .2s;
+}
+.trig { width: 84px; height: 44px; border-radius: var(--r-lg) var(--r-lg) var(--r-sm) var(--r-sm); font-size: 17px !important; }
+.bump { width: 62px; height: 34px; border-radius: 999px; font-size: 15px !important; }
+.on { background: var(--accent) !important; color: var(--accent-ink) !important; border-color: var(--accent) !important; }
+.cool { opacity: .5; }
+
+.hud { display: flex; align-items: center; gap: 10px; }
+.status {
+  display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); font-weight: 600; font-size: 13px;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.status.off .dot { background: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent); }
+.rate { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 74px; }
+.leave { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--muted) !important; }
+.leave:hover { color: var(--ink) !important; background: var(--surface) !important; }
+
+.pad-body { flex: 1; display: grid; grid-template-columns: 1fr 240px 1fr; padding: 4px 26px 14px; }
+.zone { display: flex; flex-direction: column; justify-content: space-between; }
+.zone.left { align-items: flex-start; }
+.zone.left .dpad-wrap { align-self: center; margin-left: 70px; }
+.zone.right { align-items: flex-end; }
+.zone.right .stick-r { align-self: center; margin-right: 70px; }
+.zone.mid { justify-content: center; align-items: center; gap: 18px; }
+.ctl { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.cap { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+.joy { width: 110px; height: 110px; border-radius: 50%; position: relative; touch-action: none; cursor: grab; background: var(--well); border: 2px solid var(--line); }
+.joy::after { content: ""; position: absolute; inset: 26px; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--line) 80%, transparent); }
+.stick {
+  position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; z-index: 1;
+  background: var(--stick); pointer-events: none; transition: background .1s;
+}
+.joy.active .stick { background: var(--accent); }
+
+.dpad { display: grid; grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(3, 36px); }
+.d { border-radius: 8px; }
+.d .material-icons-round { font-size: 22px; }
+.d[data-btn="UP"] { grid-area: 1 / 2; } .d[data-btn="LEFT"] { grid-area: 2 / 1; }
+.d[data-btn="RIGHT"] { grid-area: 2 / 3; } .d[data-btn="DOWN"] { grid-area: 3 / 2; }
+
+.face { display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); }
+.fb { width: 46px; height: 46px; border-radius: 50%; color: var(--c) !important; border: 2px solid var(--c); font-size: 19px !important; }
+.fb.on { background: var(--c) !important; border-color: var(--c) !important; color: var(--bg) !important; }
+.fb[data-k="Y"] { grid-area: 1 / 2; --c: var(--y); } .fb[data-k="X"] { grid-area: 2 / 1; --c: var(--x); }
+.fb[data-k="B"] { grid-area: 2 / 3; --c: var(--b); } .fb[data-k="A"] { grid-area: 3 / 2; --c: var(--a); }
+
+.sys-row, .quick-row { display: flex; gap: 14px; }
+.sys { width: 44px; height: 44px; border-radius: 50%; }
+.quick { height: 34px; padding: 0 16px; gap: 6px; border-radius: 999px; font-size: 14px !important; }
+.quick .material-icons-round { font-size: 17px; }
+.drs {
+  display: flex !important; align-items: center; gap: 12px; padding: 12px 22px 12px 14px !important; border-radius: var(--r-lg);
+  background: var(--accent) !important; color: var(--accent-ink) !important; transition: transform .08s, background .2s;
+}
+.drs-t { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--r-sm); background: color-mix(in srgb, var(--accent-ink) 14%, transparent); font: 800 22px var(--f-display); }
+.drs b { display: block; font: 700 19px/1.05 var(--f-display); text-align: left; }
+.drs small { display: block; font-size: 11.5px; font-weight: 500; opacity: .75; text-align: left; font-variant-numeric: tabular-nums; }
+.drs:active { transform: scale(.97); }
+.drs.cool { opacity: 1; background: var(--raised) !important; color: var(--muted) !important; }
+
+.toast {
+  position: absolute; left: 50%; bottom: 16px; z-index: 30; transform: translate(-50%, 140%); opacity: 0;
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font: 600 13px var(--f-body);
+  display: flex; gap: 8px; align-items: center; transition: transform .22s, opacity .22s; pointer-events: none;
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast.bad { background: var(--bad); color: #fff; }
+.scrim { position: absolute; inset: 0; z-index: 20; display: none; place-items: center; background: rgba(0,0,0,.55); }
+.scrim.show { display: grid; }
+.dialog { width: 360px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; font-family: var(--f-body); }
+.dialog h2 { font: 700 20px var(--f-display); margin: 0 0 8px; }
+.dialog p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.dialog dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0 0 18px; font-size: 13px; }
+.dialog dt { color: var(--muted); } .dialog dd { margin: 0; font-weight: 600; text-align: right; }
+.dialog .btn-primary { width: 100%; }
+
+/* ================= Concept 1: Floodlit night match ================= */
+/* Two floodlight cones from the top corners are the one memorable move. */
+.device[data-theme="flood"] .screen {
+  background:
+    radial-gradient(ellipse 340px 260px at 6% -12%, rgba(235,242,255,.20), transparent 70%),
+    radial-gradient(ellipse 340px 260px at 94% -12%, rgba(235,242,255,.20), transparent 70%),
+    var(--bg);
+}
+.device[data-theme="flood"] .home h1, .device[data-theme="flood"] .panel h2 { text-transform: uppercase; letter-spacing: .01em; }
+.device[data-theme="flood"] .status { background: #050B1C; border-color: #22345F; font-family: var(--f-display); font-size: 15px; letter-spacing: .04em; }
+.device[data-theme="flood"] .rate { font-family: var(--f-display); font-size: 15px; color: var(--accent); letter-spacing: .03em; }
+.device[data-theme="flood"] .drs { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.device[data-theme="flood"] .drs.cool { box-shadow: none; }
+.device[data-theme="flood"] .fb { background: var(--surface); }
+
+/* ================= Concept 2: Console hardware ================= */
+/* Physical keys: raised surfaces that sink when pressed. Only ABXY carry colour. */
+.device[data-theme="console"] .screen { background: linear-gradient(180deg, #2A2E33, #1F2226); }
+.device[data-theme="console"] .panel { border: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 30px rgba(0,0,0,.25); }
+.device[data-theme="console"] .logo { background: #ECEEF0; }
+.device[data-theme="console"] :is(.trig, .bump, .sys, .quick, .d, .fb) {
+  border: 0; background: linear-gradient(180deg, #3D4248, #33383D);
+  box-shadow: 0 3px 0 #15181B, inset 0 1px 0 rgba(255,255,255,.08);
+}
+.device[data-theme="console"] :is(.trig, .bump, .sys, .quick, .d, .fb).on {
+  transform: translateY(3px); box-shadow: 0 0 0 #15181B, inset 0 2px 4px rgba(0,0,0,.35);
+}
+.device[data-theme="console"] :is(.trig, .bump, .sys, .quick, .d).on { background: #ECEEF0 !important; color: #1B1E21 !important; }
+.device[data-theme="console"] .joy { border: 0; box-shadow: inset 0 4px 10px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.05); }
+.device[data-theme="console"] .joy::after { display: none; }
+.device[data-theme="console"] .stick { background: radial-gradient(circle at 50% 40%, #555C64, #3A3F45); box-shadow: 0 4px 8px rgba(0,0,0,.5), inset 0 -3px 6px rgba(0,0,0,.35); }
+.device[data-theme="console"] .joy.active .stick { background: radial-gradient(circle at 50% 40%, #FFFFFF, #CFD3D8); }
+.device[data-theme="console"] .status { border: 0; background: var(--well); }
+.device[data-theme="console"] .drs { box-shadow: 0 3px 0 #9DA3AA; }
+.device[data-theme="console"] .drs:active { transform: translateY(3px); box-shadow: none; }
+.device[data-theme="console"] .field input { border: 0; box-shadow: inset 0 2px 5px rgba(0,0,0,.4); }
+
+/* ================= Concept 3: Broadcast graphics ================= */
+/* TV overlay vocabulary: slanted bars, teal + magenta, condensed caps. */
+.device[data-theme="broadcast"] .screen {
+  background:
+    linear-gradient(115deg, transparent 0 62%, rgba(255,46,136,.16) 62% 70%, rgba(0,224,198,.12) 70% 74%, transparent 74%),
+    var(--bg);
+}
+.device[data-theme="broadcast"] :is(.trig, .bump, .quick, .status, .btn-primary, .drs, .logo) {
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); border: 0;
+}
+.device[data-theme="broadcast"] :is(.trig, .bump, .quick) { background: var(--raised); }
+.device[data-theme="broadcast"] .trig { width: 90px; }
+.device[data-theme="broadcast"] :is(.home h1, .panel h2, .brand-name, .trig, .bump, .quick, .drs b, .btn-primary, .dialog h2) { text-transform: uppercase; font-style: italic; }
+.device[data-theme="broadcast"] .home h1 { font-size: 36px; }
+.device[data-theme="broadcast"] .quick { padding: 0 22px; }
+.device[data-theme="broadcast"] .panel { border: 0; border-left: 4px solid var(--accent); }
+.device[data-theme="broadcast"] .status { background: var(--accent); color: var(--accent-ink); padding: 0 20px; text-transform: uppercase; font-family: var(--f-display); font-size: 15px; letter-spacing: .03em; }
+.device[data-theme="broadcast"] .status .dot { background: var(--accent-ink); box-shadow: none; }
+.device[data-theme="broadcast"] .status.off { background: var(--bad); }
+.device[data-theme="broadcast"] .drs { background: var(--hot) !important; color: #fff !important; padding-left: 20px !important; }
+.device[data-theme="broadcast"] .drs-t { background: rgba(255,255,255,.18); }
+.device[data-theme="broadcast"] .drs.cool { background: var(--raised) !important; color: var(--muted) !important; }
+.device[data-theme="broadcast"] .joy { border-color: var(--accent); }
+.device[data-theme="broadcast"] .d { border-radius: 0; }
+.device[data-theme="broadcast"] .steps li::before { border-radius: 0; border: 0; background: var(--raised); color: var(--accent); font-style: italic; }
+.device[data-theme="broadcast"] .toast { border-radius: 0; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .device *, .device *::before { transition: none !important; animation-duration: 0s !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="seg" role="group" aria-label="Design">
+    <span class="seg-label" style="align-self:center;padding-left:8px">Design</span>
+    <button data-theme="flood" aria-pressed="true">1. Floodlit</button>
+    <button data-theme="console" aria-pressed="false">2. Console</button>
+    <button data-theme="broadcast" aria-pressed="false">3. Broadcast</button>
+  </div>
+  <div class="seg" role="group" aria-label="Screen">
+    <span class="seg-label" style="align-self:center;padding-left:8px">Screen</span>
+    <button data-go="home" aria-pressed="true">Connect</button>
+    <button data-go="pad" aria-pressed="false">Controller</button>
+  </div>
+</div>
+<p class="concept-note" id="note"></p>
+
+<div class="stage"><div class="device" id="device" data-theme="flood">
+
+  <!-- ============ Connect ============ -->
+  <section class="screen active" id="home">
+    <div class="home">
+      <div class="intro">
+        <div class="brand">
+          <span class="logo"><span class="material-icons-round">sports_cricket</span></span>
+          <span class="brand-name">Cricket 24 Pad</span>
+        </div>
+        <h1>Play Cricket 24 from your phone</h1>
+        <p class="lead">Your phone becomes a wireless controller for the game running on your PC.</p>
+        <ol class="steps">
+          <li><b>Start the server on your PC</b><span>Run <code>python server.py</code></span></li>
+          <li><b>Enter the address it shows</b><span>Something like 192.168.1.100</span></li>
+          <li><b>Stay on the same Wi‑Fi</b><span>Allow Python through the firewall if asked</span></li>
+        </ol>
+      </div>
+
+      <form class="panel" id="connectForm" novalidate>
+        <h2>Connect to your PC</h2>
+        <label class="field"><span>PC address</span>
+          <input id="ip" placeholder="192.168.1.100" inputmode="decimal" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="field-row">
+          <label class="field"><span>Port</span><input id="port" value="8080" inputmode="numeric"></label>
+          <button type="submit" class="btn-primary" id="connectBtn">Connect</button>
+        </div>
+        <div class="msg" id="msg" role="status" aria-live="polite"></div>
+        <div class="form-foot">
+          <button type="button" class="btn-link" id="testBtn"><span class="material-icons-round">wifi_tethering</span>Test connection</button>
+          <button type="button" class="btn-link" id="advBtn" aria-expanded="false" aria-controls="settings">Controller settings<span class="material-icons-round chev">expand_more</span></button>
+        </div>
+        <dl class="settings" id="settings" hidden>
+          <dt>Shortest button press</dt><dd>25 ms</dd>
+          <dt>Repeat protection</dt><dd>50 ms</dd>
+          <dt>Stick updates</dt><dd>60 per second</dd>
+          <dt>Stick dead zone</dt><dd>15%</dd>
+        </dl>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ Controller ============ -->
+  <section class="screen" id="pad">
+    <header class="pad-top">
+      <div class="shoulders">
+        <button class="trig" data-trigger="LT">LT</button>
+        <button class="bump" data-btn="LB">LB</button>
+      </div>
+      <div class="hud">
+        <div class="status" id="status" title="Long-press to preview a lost connection"><span class="dot"></span><span id="statusText">Player 1</span></div>
+        <span class="rate" id="perfText">0 inputs/s</span>
+        <button class="leave" id="leaveBtn" aria-label="Disconnect"><span class="material-icons-round">logout</span></button>
+      </div>
+      <div class="shoulders right">
+        <button class="bump" data-btn="RB">RB</button>
+        <button class="trig" data-trigger="RT">RT</button>
+      </div>
+    </header>
+
+    <div class="pad-body">
+      <div class="zone left">
+        <div class="ctl"><div class="joy" data-joy="left"><div class="stick"></div></div><span class="cap">Move</span></div>
+        <div class="ctl dpad-wrap">
+          <div class="dpad">
+            <button class="d" data-btn="UP" aria-label="Up"><span class="material-icons-round">keyboard_arrow_up</span></button>
+            <button class="d" data-btn="LEFT" aria-label="Left"><span class="material-icons-round">keyboard_arrow_left</span></button>
+            <button class="d" data-btn="RIGHT" aria-label="Right"><span class="material-icons-round">keyboard_arrow_right</span></button>
+            <button class="d" data-btn="DOWN" aria-label="Down"><span class="material-icons-round">keyboard_arrow_down</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="zone mid">
+        <div class="sys-row">
+          <button class="sys" data-tap="VIEW" aria-label="View"><span class="material-icons-round">filter_none</span></button>
+          <button class="sys" data-tap="MENU" aria-label="Menu"><span class="material-icons-round">menu</span></button>
+        </div>
+        <button class="drs" id="appeal">
+          <span class="drs-t" aria-hidden="true">T</span>
+          <span><b>DRS review</b><small id="appealCd">Ready</small></span>
+        </button>
+        <div class="quick-row">
+          <button class="quick" data-tap="PAUSE"><span class="material-icons-round">pause</span>Pause</button>
+          <button class="quick" data-tap="BACK"><span class="material-icons-round">undo</span>Back</button>
+        </div>
+      </div>
+
+      <div class="zone right">
+        <div class="ctl">
+          <div class="face">
+            <button class="fb" data-k="Y" data-btn="Y">Y</button>
+            <button class="fb" data-k="X" data-btn="X">X</button>
+            <button class="fb" data-k="B" data-btn="B">B</button>
+            <button class="fb" data-k="A" data-tap="A">A</button>
+          </div>
+        </div>
+        <div class="ctl stick-r"><div class="joy" data-joy="right"><div class="stick"></div></div><span class="cap">Camera</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"><div class="dialog" id="dialog" role="dialog" aria-modal="true"></div></div>
+  <div class="toast" id="toast" role="status"></div>
+</div></div>
+
+<div class="log" id="log"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const device = $('#device');
+
+// ---------- page chrome ----------
+const NOTES = {
+  flood: '<b>Floodlit night match.</b> Stadium-at-night navy lit by two floodlights, one scoreboard-amber accent for anything live or pressed. Condensed sports type.',
+  console: '<b>Console hardware.</b> Matte graphite keys that physically sink when pressed. No glow, no gradients for show; ABXY are the only colour.',
+  broadcast: '<b>Broadcast graphics.</b> TV cricket-overlay language: slanted bars, teal and magenta, condensed italic caps. Loud and energetic.',
+};
+function setTheme(t) {
+  device.dataset.theme = t;
+  $$('[data-theme]', $('.chrome')).forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === t));
+  $('#note').innerHTML = NOTES[t];
+}
+$$('.chrome [data-theme]').forEach(b => b.onclick = () => setTheme(b.dataset.theme));
+setTheme('flood');
+
+function fit() {
+  const s = Math.min(1, (innerWidth - 32) / 864);
+  device.style.transform = `scale(${s})`;
+  device.parentElement.style.height = (410 * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+function show(id) {
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  $$('[data-go]').forEach(b => b.setAttribute('aria-pressed', b.dataset.go === id));
+  if (id === 'pad') startSession();
+}
+$$('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+
+// ---------- toast / dialog ----------
+let toastTimer;
+function toast(html, ms = 2000, bad = false) {
+  const el = $('#toast');
+  el.innerHTML = html; el.classList.toggle('bad', bad); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+const openDialog = html => { $('#dialog').innerHTML = html; $('#scrim').classList.add('show'); $('#dialog button')?.focus(); };
+const closeDialog = () => $('#scrim').classList.remove('show');
+
+// ---------- connect ----------
+// The real app opens a TCP socket; a browser can't, so connecting is simulated.
+const ipEl = $('#ip'), portEl = $('#port'), connectBtn = $('#connectBtn'), msgEl = $('#msg');
+const IP_RE = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let busy = false;
+
+function say(kind, text) {
+  msgEl.className = 'msg ' + (kind || '');
+  const icon = kind === 'err' ? '<span class="material-icons-round">error_outline</span>'
+             : kind === 'ok' ? '<span class="material-icons-round">check_circle</span>'
+             : kind === 'busy' ? '<span class="spinner"></span>' : '';
+  msgEl.innerHTML = text ? icon + '<span>' + text + '</span>' : '';
+}
+function read() {
+  const ip = ipEl.value.trim(), port = parseInt(portEl.value.trim(), 10) || 8080;
+  ipEl.removeAttribute('aria-invalid'); portEl.removeAttribute('aria-invalid');
+  if (!ip) { ipEl.setAttribute('aria-invalid', 'true'); say('err', "Enter your PC's address. The server prints it when it starts."); return null; }
+  if (!IP_RE.test(ip)) { ipEl.setAttribute('aria-invalid', 'true'); say('err', 'Use four numbers separated by dots, like 192.168.1.100.'); return null; }
+  if (port < 1024 || port > 65535) { portEl.setAttribute('aria-invalid', 'true'); say('err', 'Port must be between 1024 and 65535.'); return null; }
+  return { ip, port };
+}
+function setBusy(b) {
+  busy = b; connectBtn.disabled = b; $('#testBtn').disabled = b;
+  connectBtn.innerHTML = b ? '<span class="spinner"></span>Connecting' : 'Connect';
+}
+
+$('#connectForm').onsubmit = async e => {
+  e.preventDefault();
+  if (busy) return;
+  const t = read(); if (!t) return;
+  setBusy(true);
+  say('busy', `Connecting to ${t.ip}:${t.port}…`); await wait(900);
+  say('ok', 'Connected. Opening the controller…'); await wait(700);
+  setBusy(false); say('', '');
+  show('pad');
+};
+$('#testBtn').onclick = async () => {
+  const t = read(); if (!t) return;
+  say('busy', `Looking for the server at ${t.ip}:${t.port}…`); await wait(1000);
+  say('ok', "Server found. You're ready to connect.");
+};
+$('#advBtn').onclick = e => {
+  const s = $('#settings'); s.hidden = !s.hidden;
+  e.currentTarget.setAttribute('aria-expanded', !s.hidden);
+};
+
+// ---------- controller ----------
+const MIN_PRESS = 25, MIN_GAP = 50, SHOT_CD = 200, APPEAL_CD = 1000, DEADZONE = 0.15;
+const lastPress = {}, held = {};
+let sent = 0, recent = [], sessionStart = Date.now(), connected = true;
+const cooldownFor = b => b === 'A' ? SHOT_CD : b === 'APPEAL' ? APPEAL_CD : MIN_GAP;
+const onCooldown = b => lastPress[b] && Date.now() - lastPress[b] < cooldownFor(b);
+
+const logEl = $('#log');
+function send(msg) {
+  if (!connected) return;
+  sent++; recent.push(Date.now());
+  const line = document.createElement('div');
+  line.textContent = JSON.stringify({ player: 'cricket_player', ...msg, game: 'cricket24', timestamp: Date.now() });
+  logEl.prepend(line);
+  if (logEl.children.length > 60) logEl.lastChild.remove();
+}
+const buzz = p => { try { navigator.vibrate?.(p); } catch {} };
+function dim(el, b) { el.classList.add('cool'); setTimeout(() => el.classList.remove('cool'), cooldownFor(b)); }
+
+$$('[data-btn]').forEach(el => {
+  const b = el.dataset.btn;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(b) || held[b]) return;
+    held[b] = lastPress[b] = Date.now();
+    el.classList.add('on'); send({ button: b, type: 'press' }); buzz(30);
+  });
+  const up = () => {
+    if (!held[b]) return;
+    const t = Math.max(0, MIN_PRESS - (Date.now() - held[b]));
+    setTimeout(() => { held[b] = 0; el.classList.remove('on'); send({ button: b, type: 'release' }); }, t);
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+$$('[data-tap]').forEach(el => {
+  const b = el.dataset.tap;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (!connected || onCooldown(b)) return;
+    lastPress[b] = Date.now();
+    send({ button: b, type: 'tap' }); buzz(b === 'A' ? 40 : 30);
+    el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 110);
+    if (b === 'A') setTimeout(() => dim(el, b), 110);
+  });
+});
+
+$$('[data-trigger]').forEach(el => {
+  const t = el.dataset.trigger;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    if (!connected || onCooldown(t)) return;
+    lastPress[t] = Date.now(); el.classList.add('on');
+    send({ trigger: t, value: 1.0, type: 'trigger_press' }); buzz(60);
+  });
+  const up = () => { if (!el.classList.contains('on')) return; el.classList.remove('on'); send({ trigger: t, value: 0.0, type: 'trigger_release' }); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+
+const appeal = $('#appeal'), appealCd = $('#appealCd');
+appeal.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!connected) return;
+  if (onCooldown('APPEAL')) return;
+  lastPress.APPEAL = Date.now();
+  send({ button: 'APPEAL', type: 'tap', priority: 'high' }); buzz([80, 50, 60]);
+  toast('<span class="material-icons-round" style="font-size:17px">sports_cricket</span>Review sent', 1100);
+  appeal.classList.add('cool');
+  (function tick() {
+    const left = APPEAL_CD - (Date.now() - lastPress.APPEAL);
+    if (left <= 0) { appeal.classList.remove('cool'); appealCd.textContent = 'Ready'; return; }
+    appealCd.textContent = `Available in ${(left / 1000).toFixed(1)}s`; requestAnimationFrame(tick);
+  })();
+});
+
+$$('[data-joy]').forEach(base => {
+  const id = base.dataset.joy, stick = $('.stick', base);
+  let last = { x: 0, y: 0 }, lastSend = 0;
+  const emit = (x, y) => {
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+    if (Math.abs(x - last.x) < 0.05 && Math.abs(y - last.y) < 0.05) return;
+    if ((x || y) && Date.now() - lastSend < 16) return;
+    last = { x, y }; lastSend = Date.now();
+    send({ joystick: id, x: x.toFixed(3), y: y.toFixed(3) });
+  };
+  const move = e => {
+    const r = base.getBoundingClientRect(), scale = r.width / base.offsetWidth;
+    let dx = (e.clientX - r.left - r.width / 2) / scale, dy = (e.clientY - r.top - r.height / 2) / scale;
+    const max = base.offsetWidth / 2 - 25, d = Math.hypot(dx, dy);
+    if (d > max) { dx *= max / d; dy *= max / d; }
+    stick.style.transform = `translate(${dx}px, ${dy}px)`;
+    emit(dx / max, dy / max);
+  };
+  base.addEventListener('pointerdown', e => { base.setPointerCapture(e.pointerId); base.classList.add('active'); move(e); });
+  base.addEventListener('pointermove', e => { if (base.hasPointerCapture(e.pointerId)) move(e); });
+  const reset = () => { base.classList.remove('active'); stick.style.transform = ''; emit(0, 0); };
+  base.addEventListener('pointerup', reset); base.addEventListener('pointercancel', reset);
+});
+
+function startSession() {
+  connected = true; sessionStart = Date.now(); sent = 0; recent = [];
+  $('#status').classList.remove('off'); $('#statusText').textContent = 'Player 1';
+}
+setInterval(() => {
+  const now = Date.now(); recent = recent.filter(t => now - t < 1000);
+  $('#perfText').textContent = `${recent.length} inputs/s`;
+}, 250);
+
+$('#leaveBtn').onclick = () => { send({ type: 'cricket_disconnect' }); show('home'); };
+
+// Long-press the status pill to preview the lost-connection state.
+let lp;
+$('#status').addEventListener('pointerdown', () => lp = setTimeout(loseConnection, 700));
+$('#status').addEventListener('pointerup', () => clearTimeout(lp));
+function loseConnection() {
+  if (!connected) return;
+  connected = false;
+  $('#status').classList.add('off'); $('#statusText').textContent = 'Disconnected';
+  toast('Lost connection to your PC', 2500, true);
+  setTimeout(() => openDialog(`
+    <h2>Connection lost</h2>
+    <p>Your phone can't reach the server. Check that server.py is still running and both devices are on the same Wi‑Fi.</p>
+    <dl><dt>Session length</dt><dd>${Math.max(1, Math.round((Date.now() - sessionStart) / 60000))} min</dd><dt>Inputs sent</dt><dd>${sent}</dd></dl>
+    <button class="btn-primary" id="backSetup">Back to connect</button>`), 700);
+}
+$('#dialog').addEventListener('click', e => { if (e.target.id === 'backSetup') { closeDialog(); show('home'); } });
+</script>
+</body>
+</html>
