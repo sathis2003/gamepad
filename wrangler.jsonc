@@ -1,0 +1,9 @@
+// Cloudflare Workers static-assets deploy of the download site (docs/).
+// Committed so the build does not depend on wrangler's auto-setup prompts.
+{
+  "name": "gamepad",
+  "compatibility_date": "2026-10-23",
+  "assets": { "directory": "docs" },
+  "workers_dev": true,
+  "preview_urls": false
+}
