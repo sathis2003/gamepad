@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -31,7 +33,7 @@ android {
     }
 
     // Upload key from android/key.properties (gitignored). Absent → debug signing, so local builds still work.
-    val keyProps = java.util.Properties().apply {
+    val keyProps = Properties().apply {
         val f = rootProject.file("key.properties")
         if (f.exists()) f.inputStream().use { load(it) }
     }
