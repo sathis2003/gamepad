@@ -49,3 +49,7 @@ app.*.map.json
 /gamejoy server/dist/
 /gamejoy server/icon.ico
 /gamejoy server/*.spec
+
+# Tool caches
+.wrangler/
+android/.kotlin/

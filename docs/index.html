@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PocketPad</title>
 <meta name="description" content="Turn your Android phone into an Xbox controller for Windows games. Free, no account, works over Wi-Fi, hotspot or USB.">
+<meta property="og:title" content="PocketPad: your phone is the controller">
+<meta property="og:description" content="A free wireless Xbox-style gamepad for any Windows game. Install the app, open the PC server, tap your PC, play.">
+<meta property="og:image" content="img/app-controller.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&display=swap">
 <style>
@@ -14,21 +17,28 @@
     --y:#EBCB5E; --b:#6AA6EC; --r:#EE7D76; --g:#7BC96F;
   }
   *{box-sizing:border-box}
-  html{color-scheme:dark}
-  body{margin:0;background:linear-gradient(var(--bg),var(--deep));color:var(--ink);
-    font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:17px;line-height:1.55;min-height:100vh}
+  html{color-scheme:dark;scroll-behavior:smooth}
+  body{margin:0;background:var(--deep);color:var(--ink);
+    font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:17px;line-height:1.55}
   a{color:var(--ink)}
-  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  img{display:block;max-width:100%;height:auto}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+  :focus-visible{outline:3px solid var(--b);outline-offset:3px;border-radius:6px}
+
+  /* header */
   header{display:flex;align-items:center;gap:12px;padding:22px 0}
-  header svg{width:34px;height:34px;border-radius:9px}
+  header .logo{width:34px;height:34px;border-radius:9px}
   header strong{font-weight:600;font-size:18px}
-  header nav{margin-left:auto;display:flex;gap:22px}
+  header nav{margin-left:auto;display:flex;gap:24px}
   header nav a{color:var(--muted);text-decoration:none}
   header nav a:hover{color:var(--ink)}
 
-  .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;padding:48px 0 72px}
-  h1{font-size:clamp(40px,6vw,66px);font-weight:800;font-stretch:75%;line-height:.98;letter-spacing:-.01em;margin:0 0 20px}
-  .lede{color:var(--muted);font-size:19px;max-width:30em;margin:0 0 32px}
+  /* hero */
+  .hero{background:linear-gradient(var(--bg),var(--deep))}
+  .hero-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center;padding:40px 0 88px}
+  .hero-grid>*,.demo>*,.two>*,.feature>*{min-width:0}
+  h1{font-size:clamp(46px,6.4vw,84px);font-weight:800;font-stretch:75%;line-height:.94;letter-spacing:-.015em;margin:0 0 22px}
+  .lede{color:var(--muted);font-size:19px;max-width:30em;margin:0 0 30px}
   .dl{display:flex;flex-wrap:wrap;gap:12px}
   .btn{display:inline-flex;flex-direction:column;gap:2px;padding:14px 20px;border-radius:14px;text-decoration:none;
     border:1px solid var(--line);background:var(--raised);min-width:220px}
@@ -38,73 +48,111 @@
   .btn.primary span{color:#2f4a2b}
   .btn.coffee{background:var(--y);border-color:var(--y);color:var(--well)}
   .btn.coffee span{color:#5a4a1c}
-  .btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid var(--b);outline-offset:2px}
-  .fine{color:var(--muted);font-size:14px;margin:18px 0 0}
+  .fine{color:var(--muted);font-size:14px;margin:16px 0 0}
 
-  /* the phone as a controller */
-  .pad{aspect-ratio:2/1;border-radius:28px;background:var(--well);border:1px solid var(--line);
-    box-shadow:0 30px 60px -30px #000, inset 0 1px 0 #ffffff14;position:relative;padding:8%}
-  .pad .screen{position:absolute;inset:7%;border-radius:18px;background:var(--surface,#2B2F34);
+  /* live demo: phone on the left, what Windows sees on the right */
+  .demo{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}
+  .phone{aspect-ratio:2.05/1;border-radius:30px;background:#121416;border:1px solid var(--line);padding:4.5%;
+    box-shadow:0 40px 80px -40px #000,inset 0 1px 0 #ffffff14;position:relative;touch-action:none;user-select:none}
+  .screen{position:absolute;inset:6%;border-radius:20px;background:linear-gradient(#2B2F34,#24272b);
     display:grid;grid-template-columns:1fr 1fr;align-items:center}
-  .stick{width:38%;aspect-ratio:1;border-radius:50%;background:var(--deep);margin:auto;position:relative;border:1px solid var(--line)}
-  .stick::after{content:"";position:absolute;inset:30%;border-radius:50%;background:var(--raised);box-shadow:0 4px 10px #0008}
-  .face{position:relative;width:38%;aspect-ratio:1;margin:auto}
-  .face i{position:absolute;width:30%;aspect-ratio:1;border-radius:50%;box-shadow:0 0 18px 2px currentColor,0 3px 0 #0006}
-  .face .y{color:var(--y);background:var(--y);left:35%;top:0}
-  .face .b{color:var(--b);background:var(--b);left:0;top:35%}
-  .face .r{color:var(--r);background:var(--r);right:0;top:35%}
-  .face .g{color:var(--g);background:var(--g);left:35%;bottom:0}
-  .pad .cam{position:absolute;top:50%;left:3%;width:10px;height:10px;border-radius:50%;background:#000;transform:translateY(-50%);border:1px solid var(--line)}
+  .stick{width:52%;aspect-ratio:1;border-radius:50%;background:var(--well);margin:auto;position:relative;
+    border:1px solid var(--line);cursor:grab}
+  .knob{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;border-radius:50%;background:var(--raised);
+    box-shadow:0 5px 12px #0009;transform:translate(-50%,-50%)}
+  .face{position:relative;width:62%;aspect-ratio:1;margin:auto}
+  .face button{position:absolute;width:33%;aspect-ratio:1;border-radius:50%;border:0;background:var(--raised);
+    color:var(--c);font:800 clamp(12px,1.6vw,18px)/1 inherit;cursor:pointer;box-shadow:0 4px 0 #0007;padding:0}
+  .face button.on{background:var(--c);color:var(--well);box-shadow:0 0 22px 2px var(--c);transform:translateY(3px)}
+  .face [data-k=Y]{--c:var(--y);left:33.5%;top:0}
+  .face [data-k=X]{--c:var(--b);left:0;top:33.5%}
+  .face [data-k=B]{--c:var(--r);right:0;top:33.5%}
+  .face [data-k=A]{--c:var(--g);left:33.5%;bottom:0}
 
-  h2{font-size:30px;font-weight:600;font-stretch:85%;margin:0 0 20px}
-  section{padding:40px 0;border-top:1px solid var(--line)}
-  ol.steps{list-style:none;margin:0;padding:0;counter-reset:s}
-  ol.steps li{display:grid;grid-template-columns:52px 1fr;gap:16px;padding:18px 0;border-top:1px solid var(--line);counter-increment:s}
-  ol.steps li:first-child{border-top:0}
-  ol.steps li::before{content:counter(s);font-size:34px;font-weight:800;font-stretch:75%;line-height:1;color:var(--g)}
-  ol.steps b{display:block;font-weight:600;margin-bottom:4px}
-  ol.steps p{margin:0;color:var(--muted);max-width:60ch}
-  code{background:var(--well);padding:2px 7px;border-radius:6px;font-size:.92em;color:var(--y)}
+  .pc{width:170px;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:14px;font-size:13px}
+  .pc .t{color:var(--muted);margin:0 0 10px;line-height:1.3}
+  .pc .t b{color:var(--ink);font-weight:600;display:block}
+  .leds{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+  .leds i{display:grid;place-items:center;height:30px;border-radius:8px;background:var(--raised);
+    font-style:normal;font-weight:700;color:var(--muted)}
+  .leds i.on{background:var(--c);color:var(--well)}
+  .axis{position:relative;height:84px;border-radius:10px;background:var(--raised);overflow:hidden}
+  .axis::before,.axis::after{content:"";position:absolute;background:var(--line)}
+  .axis::before{left:50%;top:0;bottom:0;width:1px}.axis::after{top:50%;left:0;right:0;height:1px}
+  .axis span{position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;background:var(--g);
+    transform:translate(-50%,-50%)}
+  .demo-hint{grid-column:1/-1;color:var(--muted);font-size:14px;margin:0;text-align:center}
+  kbd{font:inherit;background:var(--raised);border-radius:5px;padding:0 6px}
 
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:40px}
-  .two p{color:var(--muted);max-width:50ch;margin:0 0 10px}
-  dl{margin:0}dt{font-weight:600;margin-top:14px}dd{margin:2px 0 0;color:var(--muted)}
+  /* sections */
+  section{padding:72px 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(30px,3.6vw,42px);font-weight:800;font-stretch:80%;line-height:1;margin:0 0 14px}
+  .intro{color:var(--muted);max-width:44em;margin:0 0 36px}
+  ol.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:s}
+  ol.steps li{counter-increment:s;display:flex;flex-direction:column}
+  ol.steps li::before{content:counter(s);font-size:44px;font-weight:800;font-stretch:75%;line-height:1;color:var(--g);margin-bottom:10px}
+  ol.steps b{font-size:19px;font-weight:600}
+  ol.steps p{color:var(--muted);margin:6px 0 18px}
+  .shot{margin-top:auto;border-radius:16px;border:1px solid var(--line);background:var(--well);overflow:hidden}
+  .shot.tall{max-width:260px}
 
-  form{display:flex;gap:10px;max-width:460px}
-  input{flex:1;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit}
-  button{padding:13px 18px;border-radius:12px;border:0;background:var(--raised);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
-  button:hover{background:var(--line)}
+  .feature{display:grid;grid-template-columns:1fr 1.5fr;gap:48px;align-items:center}
+  .feature ul{margin:0;padding-left:20px;color:var(--muted)}
+  .feature li{margin:6px 0}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+  dl{margin:0}dt{font-weight:600;margin-top:16px}dt:first-child{margin-top:0}dd{margin:4px 0 0;color:var(--muted)}
+
+  details{border-top:1px solid var(--line);padding:16px 0}
+  details:last-of-type{border-bottom:1px solid var(--line)}
+  summary{cursor:pointer;font-weight:600;font-size:18px}
+  details p{color:var(--muted);margin:10px 0 0;max-width:46em}
+
+  .support p{color:var(--muted);max-width:30em}
+  form{display:flex;gap:10px;max-width:460px;margin-top:16px}
+  input[type=email]{flex:1;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit}
+  form button{padding:13px 18px;border-radius:12px;border:0;background:var(--ink);color:var(--well);font:inherit;font-weight:700;cursor:pointer}
+  form button:disabled{opacity:.6;cursor:default}
+  .hp{position:absolute;left:-9999px}
+  #signup-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
+  #signup-msg.ok{color:var(--g)}#signup-msg.bad{color:var(--r)}
 
   footer{padding:28px 0 40px;color:var(--muted);font-size:14px;display:flex;gap:22px;flex-wrap:wrap;border-top:1px solid var(--line)}
   footer a{color:var(--muted)}
 
-  @media (max-width:760px){
-    .hero{grid-template-columns:1fr;gap:36px;padding:24px 0 48px}
-    .pad{order:-1;max-width:420px}
-    .two{grid-template-columns:1fr}
+  @media (max-width:900px){
+    .hero-grid,.feature,.two{grid-template-columns:1fr}
+    .hero-grid{gap:40px;padding:20px 0 64px}
+    ol.steps{grid-template-columns:1fr}
+    .shot.tall{max-width:300px}
+  }
+  @media (max-width:600px){
     header nav{display:none}
+    .demo{grid-template-columns:1fr}
+    .pc{width:auto}
     form{flex-direction:column}
+    .btn{min-width:0;flex:1 1 100%}
   }
   @media (prefers-reduced-motion:no-preference){
-    .face i{animation:press 4s infinite}
-    .face .b{animation-delay:1s}.face .r{animation-delay:2s}.face .g{animation-delay:3s}
-    @keyframes press{0%,8%,100%{transform:none}4%{transform:translateY(3px) scale(.96)}}
+    .face button,.leds i{transition:background .08s,box-shadow .08s,transform .08s}
+    .knob{transition:transform .12s ease-out}
+    .knob.drag{transition:none}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <svg viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#1F2226"/><circle cx="54" cy="36" r="10" fill="#EBCB5E"/><circle cx="36" cy="54" r="10" fill="#6AA6EC"/><circle cx="72" cy="54" r="10" fill="#EE7D76"/><circle cx="54" cy="72" r="10" fill="#7BC96F"/></svg>
-    <strong>PocketPad</strong>
-    <nav><a href="#setup">Set up</a><a href="#faster">Lower latency</a><a href="https://github.com/sathis2003/app-releases">All versions</a></nav>
-  </header>
+<div class="hero">
+  <div class="wrap">
+    <header>
+      <svg class="logo" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#1F2226"/><circle cx="54" cy="36" r="10" fill="#EBCB5E"/><circle cx="36" cy="54" r="10" fill="#6AA6EC"/><circle cx="72" cy="54" r="10" fill="#EE7D76"/><circle cx="54" cy="72" r="10" fill="#7BC96F"/></svg>
+      <strong>PocketPad</strong>
+      <nav><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#support">Support</a></nav>
+    </header>
 
-  <main>
-    <div class="hero">
+    <div class="hero-grid">
       <div>
         <h1>Your phone is the controller.</h1>
-        <p class="lede">PocketPad turns an Android phone into an Xbox controller for any Windows game. No account, no ads, free.</p>
+        <p class="lede">PocketPad turns an Android phone into an Xbox controller for any Windows game with controller support. Free, no ads, no account.</p>
         <div class="dl">
           <a class="btn primary" href="https://github.com/sathis2003/app-releases/raw/main/pocketpad/PocketPad.apk">
             <b>Download for Android</b><span>APK, Android 8 and up</span></a>
@@ -113,58 +161,114 @@
         </div>
         <p class="fine">You need both: the app on the phone, the server on the PC.</p>
       </div>
-      <div class="pad" role="img" aria-label="A phone held sideways showing a joystick and four coloured buttons">
-        <span class="cam"></span>
-        <div class="screen">
-          <div class="stick"></div>
-          <div class="face"><i class="y"></i><i class="b"></i><i class="r"></i><i class="g"></i></div>
+
+      <div class="demo" aria-label="Try it: press the buttons or drag the stick, and see what Windows receives">
+        <div class="phone">
+          <div class="screen">
+            <div class="stick" id="stick" role="slider" aria-label="Left stick" aria-valuetext="centred" tabindex="0"><div class="knob" id="knob"></div></div>
+            <div class="face">
+              <button data-k="Y" aria-label="Y">Y</button><button data-k="X" aria-label="X">X</button>
+              <button data-k="B" aria-label="B">B</button><button data-k="A" aria-label="A">A</button>
+            </div>
+          </div>
         </div>
+        <div class="pc" aria-live="polite">
+          <p class="t"><b>Windows sees</b>Xbox 360 Controller</p>
+          <div class="leds">
+            <i data-k="A" style="--c:var(--g)">A</i><i data-k="B" style="--c:var(--r)">B</i>
+            <i data-k="X" style="--c:var(--b)">X</i><i data-k="Y" style="--c:var(--y)">Y</i>
+          </div>
+          <div class="axis"><span id="dot"></span></div>
+        </div>
+        <p class="demo-hint">Try it: tap the buttons, drag the stick, or press <kbd>A</kbd> <kbd>B</kbd> <kbd>X</kbd> <kbd>Y</kbd> and the arrow keys.</p>
       </div>
     </div>
+  </div>
+</div>
 
-    <section id="setup">
-      <h2>Set up in three steps</h2>
-      <ol class="steps">
-        <li><div><b>Run PocketPad Server on the PC</b>
-          <p>Windows asks for admin once: the server opens port 8080 in the firewall and installs the controller driver. SmartScreen may say "unrecognised app"; choose More info, then Run anyway. Keep its window open while you play.</p></div></li>
-        <li><div><b>Install the app on the phone</b>
-          <p>Open the APK. Android asks to allow installs from your browser; allow it once.</p></div></li>
-        <li><div><b>Open the app and tap your PC</b>
-          <p>Phone and PC on the same Wi-Fi. Your PC shows up in the app by name; tap it and play. Windows sees an Xbox 360 controller, so any game with controller support works. Up to four phones can join the same PC.</p></div></li>
-      </ol>
-    </section>
+<main class="wrap">
+  <section id="how">
+    <h2>Set up in three steps</h2>
+    <p class="intro">No Python, no drivers to hunt for, no IP addresses to type. The first run takes about a minute; after that it is open and play.</p>
+    <ol class="steps">
+      <li>
+        <b>Open PocketPad Server on the PC</b>
+        <p>Windows asks for admin once. Click Install controller driver if asked; it is built in. SmartScreen may say "unrecognised app": choose More info, then Run anyway.</p>
+        <img class="shot tall" src="img/server-window.webp" width="432" height="613" alt="PocketPad Server window showing the PC address, one connected player and three green checks" loading="lazy">
+      </li>
+      <li>
+        <b>Install the app on your phone</b>
+        <p>Open the APK and allow installs from your browser once. Phone and PC on the same Wi-Fi.</p>
+        <img class="shot" src="img/app-connect.webp" width="1200" height="495" alt="PocketPad app listing the PC it found on the Wi-Fi, ready to connect" loading="lazy">
+      </li>
+      <li>
+        <b>Tap your PC and play</b>
+        <p>Your PC shows up by name. Tap it and Windows gets an Xbox 360 controller. Up to four phones can join one PC.</p>
+        <img class="shot" src="img/app-controller.webp" width="1200" height="495" alt="PocketPad controller screen with sticks, D-pad, bumpers, triggers and A B X Y" loading="lazy">
+      </li>
+    </ol>
+  </section>
 
-    <section id="faster" class="two">
-      <div>
-        <h2>Lower latency</h2>
-        <p>Wi-Fi through a home router is about 5 to 15 ms. Taking the router out of the path gets it under 4 ms.</p>
-      </div>
-      <dl>
-        <dt>Phone hotspot</dt><dd>Turn on the phone's hotspot and connect the PC to it. Type the hotspot address shown in the server window.</dd>
-        <dt>USB cable</dt><dd>Plug the phone in and turn on USB tethering in Android settings. Fastest and steadiest, no Wi-Fi needed.</dd>
-      </dl>
-    </section>
+  <section class="feature" id="layout">
+    <div>
+      <h2>Put every button where your thumbs want it</h2>
+      <p class="intro">Tap the pencil on the controller screen to edit the layout.</p>
+      <ul>
+        <li>Drag sticks, D-pad, A B X Y, bumpers and triggers anywhere</li>
+        <li>Make any control bigger or smaller</li>
+        <li>Hide what a game does not use</li>
+        <li>Saved on your phone, and Reset puts it all back</li>
+      </ul>
+    </div>
+    <img class="shot" src="img/app-edit.webp" width="1200" height="495" alt="Edit layout mode with the A B X Y group selected and a size slider" loading="lazy">
+  </section>
 
-    <section id="support" class="two">
-      <div>
-        <h2>Buy me a coffee</h2>
-        <p>PocketPad is free, with no ads and no account. If it makes your games better, a coffee helps keep it going.</p>
-      </div>
-      <div>
-        <a class="btn coffee" href="https://ko-fi.com/hunter74491" target="_blank" rel="noopener">
-          <b>Buy me a coffee</b><span>On Ko-fi, by card or PayPal</span></a>
-      </div>
-    </section>
+  <section class="two" id="faster">
+    <div>
+      <h2>Lower latency</h2>
+      <p class="intro">Wi-Fi through a home router is about 5 to 15 ms. Take the router out of the path to get under 4 ms.</p>
+    </div>
+    <dl>
+      <dt>Phone hotspot</dt><dd>Turn on the phone's hotspot and connect the PC to it. The app still finds the PC on its own.</dd>
+      <dt>USB cable</dt><dd>Plug the phone in and turn on USB tethering in Android settings. Fastest and steadiest, no Wi-Fi needed.</dd>
+    </dl>
+  </section>
 
-    <section id="updates">
-      <h2>Get updates and the Play Store beta</h2>
-      <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
-        <input type="email" name="email" placeholder="name@gmail.com" required aria-label="Email address">
+  <section id="faq">
+    <h2>Questions</h2>
+    <details><summary>Which games work?</summary>
+      <p>Any Windows game that supports an Xbox controller, which is most of them on Steam, Epic and the Xbox app. Windows sees a standard Xbox 360 controller.</p></details>
+    <details><summary>Why does Windows warn about the download?</summary>
+      <p>PocketPad Server is not code-signed yet, so SmartScreen does not recognise it. Choose More info, then Run anyway. It only opens port 8080 on private networks and installs the ViGEmBus controller driver.</p></details>
+    <details><summary>Why does Android ask to allow unknown apps?</summary>
+      <p>The app comes from this site instead of the Play Store, so Android asks once whether your browser may install apps. A Play Store version is on the way.</p></details>
+    <details><summary>My PC does not show up in the app</summary>
+      <p>Check PocketPad Server is open and both devices are on the same Wi-Fi. Some routers block devices from seeing each other; type the address shown in the server window instead.</p></details>
+    <details><summary>Does PocketPad collect any data?</summary>
+      <p>No. No account, no analytics, no ads. Controller input goes only from your phone to your PC. Read the <a href="privacy-policy.html">privacy policy</a>.</p></details>
+  </section>
+
+  <section class="two support" id="support">
+    <div>
+      <h2>Buy me a coffee</h2>
+      <p>PocketPad is free and made by one person. If it makes your games better, a coffee helps keep it going.</p>
+      <a class="btn coffee" href="https://ko-fi.com/hunter74491" target="_blank" rel="noopener">
+        <b>Buy me a coffee</b><span>On Ko-fi, by card or PayPal</span></a>
+    </div>
+    <div>
+      <h2>Get updates</h2>
+      <p>One email when a new version or the Play Store beta is out. Nothing else.</p>
+      <form id="signup">
+        <input type="email" name="email" placeholder="name@gmail.com" required aria-label="Email address" autocomplete="email">
+        <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit">Notify me</button>
       </form>
-    </section>
-  </main>
+      <p id="signup-msg" role="status"></p>
+    </div>
+  </section>
+</main>
 
+<div class="wrap">
   <footer>
     <span>PocketPad is free.</span>
     <a href="https://ko-fi.com/hunter74491">Buy me a coffee</a>
@@ -172,5 +276,66 @@
     <a href="https://github.com/sathis2003/app-releases/issues">Report a problem</a>
   </footer>
 </div>
+
+<script>
+// Live demo: phone buttons and stick light up the "Windows sees" panel.
+const led = k => document.querySelector(`.leds [data-k="${k}"]`);
+const key = k => document.querySelector(`.face [data-k="${k}"]`);
+function press(k, on) { key(k).classList.toggle('on', on); led(k).classList.toggle('on', on); }
+
+document.querySelectorAll('.face button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); press(k, true); });
+  ['pointerup', 'pointercancel'].forEach(t => b.addEventListener(t, () => press(k, false)));
+});
+addEventListener('keydown', e => {
+  const k = e.key.toUpperCase();
+  if ('ABXY'.includes(k) && k.length === 1 && !e.target.closest('input')) press(k, true);
+});
+addEventListener('keyup', e => { const k = e.key.toUpperCase(); if ('ABXY'.includes(k) && k.length === 1) press(k, false); });
+
+const stick = document.getElementById('stick'), knob = document.getElementById('knob'), dot = document.getElementById('dot');
+function setStick(x, y) {   // x, y in -1..1
+  const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+  knob.style.transform = `translate(calc(-50% + ${x * 55}%), calc(-50% + ${y * 55}%))`;
+  dot.style.left = `${50 + x * 42}%`; dot.style.top = `${50 + y * 42}%`;
+  stick.setAttribute('aria-valuetext', x || y ? `x ${x.toFixed(1)}, y ${y.toFixed(1)}` : 'centred');
+}
+function fromPointer(e) {
+  const r = stick.getBoundingClientRect();
+  setStick((e.clientX - r.left - r.width / 2) / (r.width / 2), (e.clientY - r.top - r.height / 2) / (r.height / 2));
+}
+stick.addEventListener('pointerdown', e => { stick.setPointerCapture(e.pointerId); knob.classList.add('drag'); fromPointer(e); });
+stick.addEventListener('pointermove', e => { if (stick.hasPointerCapture(e.pointerId)) fromPointer(e); });
+['pointerup', 'pointercancel'].forEach(t => stick.addEventListener(t, () => { knob.classList.remove('drag'); setStick(0, 0); }));
+
+const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }, held = new Set();
+function arrowStick() { let x = 0, y = 0; held.forEach(k => { x += arrows[k][0]; y += arrows[k][1]; }); setStick(x, y); }
+addEventListener('keydown', e => {
+  if (!arrows[e.key] || e.target.closest('input, summary')) return;
+  e.preventDefault(); held.add(e.key); arrowStick();
+});
+addEventListener('keyup', e => { if (held.delete(e.key)) arrowStick(); });
+
+// Email signup -> /api/subscribe (Cloudflare Worker, see worker/index.js)
+const form = document.getElementById('signup'), msg = document.getElementById('signup-msg');
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = form.querySelector('button');
+  btn.disabled = true; msg.className = ''; msg.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email.value, company: form.company.value }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Could not save your email. Try again in a minute.');
+    msg.className = 'ok'; msg.textContent = 'Done. You will get one email when the next version is out.';
+    form.reset();
+  } catch (err) {
+    msg.className = 'bad'; msg.textContent = err.message;
+  } finally { btn.disabled = false; }
+});
+</script>
 </body>
 </html>
