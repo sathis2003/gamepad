@@ -112,6 +112,15 @@
   form{display:flex;gap:10px;max-width:460px;margin-top:16px}
   input[type=email]{flex:1;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit}
   form button{padding:13px 18px;border-radius:12px;border:0;background:var(--ink);color:var(--well);font:inherit;font-weight:700;cursor:pointer}
+  .ask-title{font-size:24px;font-weight:800;font-stretch:85%;margin:48px 0 6px}
+  form.ask{flex-direction:column;max-width:560px}
+  form.ask label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14px}
+  form.ask input[type=text],form.ask input[type=email],form.ask textarea{padding:13px 14px;border-radius:12px;
+    border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit;font-size:16px}
+  form.ask textarea{resize:vertical}
+  form.ask button{align-self:flex-start}
+  #ask-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
+  #ask-msg.ok{color:var(--g)}#ask-msg.bad{color:var(--r)}
   form button:disabled{opacity:.6;cursor:default}
   .hp{position:absolute;left:-9999px}
   #signup-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
@@ -255,6 +264,17 @@
       <p>Check PocketPad Server is open and both devices are on the same Wi-Fi. Some routers block devices from seeing each other; type the address shown in the server window instead.</p></details>
     <details><summary>Does PocketPad collect any data?</summary>
       <p>No. No account, no analytics, no ads. Controller input goes only from your phone to your PC. Read the <a href="privacy-policy.html">privacy policy</a>.</p></details>
+
+    <h3 class="ask-title" id="ask">Still stuck? Ask a question</h3>
+    <p class="intro">It comes straight to my inbox, and I reply by email.</p>
+    <form class="ask" id="ask-form">
+      <label>Your name<input type="text" name="name" required maxlength="100" autocomplete="name"></label>
+      <label>Your email<input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+      <label>Question<textarea name="message" required rows="5" maxlength="4000" placeholder="Which phone and game, and what happens?"></textarea></label>
+      <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button type="submit">Send question</button>
+    </form>
+    <p id="ask-msg" role="status"></p>
   </section>
 
   <section class="two support" id="support">
@@ -282,7 +302,7 @@
     <span>PocketPad is free.</span>
     <a class="js-coffee" href="https://ko-fi.com/hunter74491">Buy me a coffee</a>
     <a href="privacy-policy.html">Privacy</a>
-    <a href="https://github.com/sathis2003/app-releases/issues">Report a problem</a>
+    <a href="#ask">Ask a question</a>
   </footer>
 </div>
 
@@ -351,6 +371,33 @@ document.querySelectorAll('.js-coffee').forEach(a => a.addEventListener('click',
 coffee.querySelector('.dlg-close').addEventListener('click', () => coffee.close());
 coffee.addEventListener('click', e => { if (e.target === coffee) coffee.close(); });  // click outside
 if (location.hash === '#coffee') openCoffee();  // the app links here
+
+// Questions -> Web3Forms, which emails them to the owner. The access key is public by design:
+// it can only deliver to the inbox it was created for.
+const ask = document.getElementById('ask-form'), askMsg = document.getElementById('ask-msg');
+ask.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = ask.querySelector('button');
+  btn.disabled = true; askMsg.className = ''; askMsg.textContent = 'Sending…';
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        access_key: 'fdb24a36-ac17-4659-bf94-9fdc9af81d26',
+        subject: 'PocketPad question from ' + ask.name.value,
+        from_name: 'PocketPad website',
+        name: ask.name.value, email: ask.email.value, message: ask.message.value,
+        botcheck: ask.botcheck.checked,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not send. Try again in a minute.');
+    askMsg.className = 'ok'; askMsg.textContent = 'Sent. I will reply to your email.';
+    ask.reset();
+  } catch (err) {
+    askMsg.className = 'bad'; askMsg.textContent = err.message;
+  } finally { btn.disabled = false; }
+});
 
 // Email signup -> /api/subscribe (Cloudflare Worker, see worker/index.js)
 const form = document.getElementById('signup'), msg = document.getElementById('signup-msg');
