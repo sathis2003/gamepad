@@ -268,14 +268,18 @@
     <details><summary>Does PocketPad collect any data?</summary>
       <p>No. No account, no analytics, no ads. Controller input goes only from your phone to your PC. Read the <a href="privacy-policy.html">privacy policy</a>.</p></details>
 
-    <h3 class="ask-title" id="ask">Still stuck? Ask a question</h3>
-    <p class="intro">It comes straight to my inbox, and I reply by email.</p>
+    <h3 class="ask-title" id="ask">Ask a question or suggest an improvement</h3>
+    <p class="intro">Stuck, found a bug, or have an idea that would make PocketPad better? It comes straight to my inbox, and I reply by email.</p>
     <form class="ask" id="ask-form">
       <label>Your name<input type="text" name="name" required maxlength="100" autocomplete="name"></label>
       <label>Your email<input type="email" name="email" required maxlength="254" autocomplete="email"></label>
-      <label>Question<textarea name="message" required rows="5" maxlength="4000" placeholder="Which phone and game, and what happens?"></textarea></label>
+      <label>What is it about?
+        <select name="topic" required>
+          <option>Question</option><option>Suggestion</option><option>Bug report</option>
+        </select></label>
+      <label>Message<textarea name="message" required rows="5" maxlength="4000" placeholder="Your phone and game, and what happened or what you would like to see."></textarea></label>
       <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button type="submit">Send question</button>
+      <button type="submit">Send</button>
     </form>
     <p id="ask-msg" class="form-msg" role="status"></p>
   </section>
@@ -338,7 +342,7 @@
     <span>PocketPad is free.</span>
     <a class="js-coffee" href="https://ko-fi.com/hunter74491">Buy me a coffee</a>
     <a href="privacy-policy.html">Privacy</a>
-    <a href="#ask">Ask a question</a>
+    <a href="#ask">Questions and ideas</a>
   </footer>
 </div>
 
@@ -423,7 +427,7 @@ function mailForm(formId, msgId, subject) {
         method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           access_key: 'fdb24a36-ac17-4659-bf94-9fdc9af81d26',
-          subject: `${subject} from ${fields.name}`,
+          subject: `${fields.topic ? "PocketPad " + fields.topic.toLowerCase() : subject} from ${fields.name}`,
           from_name: 'PocketPad website',
           ...fields,
           botcheck: f.botcheck.checked,
