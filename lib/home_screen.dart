@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 import 'gamepad_screen.dart'; // Import the Cricket gamepad screen
+
+const _coffeeUrl = 'https://ko-fi.com/hunter74491';
 
 class CricketHomeScreen extends StatefulWidget {
   @override
@@ -432,6 +435,11 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
         _setupStep('1', 'Open PocketPad Server on your PC', TextSpan(text: 'Download it from the PocketPad website')),
         _setupStep('2', 'Use the same Wi-Fi', TextSpan(text: 'Or the phone hotspot, or a USB cable')),
         _setupStep('3', 'Tap your PC', TextSpan(text: 'It shows up in the list automatically')),
+        _buildLinkButton(
+          label: 'Buy me a coffee',
+          icon: Icons.local_cafe_rounded,
+          onPressed: () => launchUrl(Uri.parse(_coffeeUrl), mode: LaunchMode.externalApplication),
+        ),
       ],
     );
   }
