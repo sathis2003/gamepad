@@ -891,6 +891,15 @@ class CricketGamepadServer:
             except OSError:
                 break
 
+            if data == b'POCKETPAD_DISCOVER':
+                # LAN broadcast from the app's PC list; firewall limits this to the local subnet
+                reply = json.dumps({'pocketpad': 1, 'name': socket.gethostname(), 'port': self.port})
+                try:
+                    self.udp_socket.sendto(reply.encode('utf-8'), addr)
+                except OSError:
+                    pass
+                continue
+
             token, payload = data[:32], data[32:]
             with self.client_lock:
                 controller_id = next(

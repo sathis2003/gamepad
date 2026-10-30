@@ -9,24 +9,79 @@ class CricketHomeScreen extends StatefulWidget {
   State<CricketHomeScreen> createState() => _CricketHomeScreenState();
 }
 
+/// A PC running PocketPad Server that answered the LAN discovery broadcast.
+class _FoundPc {
+  final String name;
+  final String ip;
+  _FoundPc(this.name, this.ip);
+}
+
 class _CricketHomeScreenState extends State<CricketHomeScreen> {
+  static const int port = 8080;
   final TextEditingController _ipController = TextEditingController();
-  final TextEditingController _portController = TextEditingController(text: '8080');
   String? errorMessage;
   bool isConnecting = false;
   String debugInfo = '';
   bool _showAdvanced = false;
   bool _leftHanded = false;
 
+  final List<_FoundPc> _found = [];
+  bool _scanning = false;
+
   @override
   void initState() {
     super.initState();
-    _loadDefaultSettings();
+    _scan();
   }
 
-  void _loadDefaultSettings() {
-    // Load any saved settings or use defaults
-    _ipController.text = '';
+  /// Broadcasts POCKETPAD_DISCOVER on UDP 8080 and collects replies for 2 s.
+  /// Sends to 255.255.255.255 and to each local /24 broadcast so hotspot and USB tethering work too.
+  Future<void> _scan() async {
+    if (_scanning) return;
+    setState(() {
+      _scanning = true;
+      _found.clear();
+    });
+    RawDatagramSocket? udp;
+    try {
+      udp = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      udp.broadcastEnabled = true;
+      udp.listen((event) {
+        if (event != RawSocketEvent.read) return;
+        final dg = udp?.receive();
+        if (dg == null) return;
+        try {
+          final reply = jsonDecode(utf8.decode(dg.data));
+          final ip = dg.address.address;
+          if (reply['pocketpad'] == 1 && _found.every((p) => p.ip != ip) && mounted) {
+            setState(() => _found.add(_FoundPc(reply['name']?.toString() ?? ip, ip)));
+          }
+        } catch (_) {
+          // not a PocketPad reply
+        }
+      });
+
+      final targets = {'255.255.255.255'};
+      for (final nic in await NetworkInterface.list(type: InternetAddressType.IPv4)) {
+        for (final a in nic.addresses) {
+          final parts = a.address.split('.');
+          // ponytail: assumes /24, true for home routers, hotspot and USB tethering
+          targets.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
+        }
+      }
+      final probe = utf8.encode('POCKETPAD_DISCOVER');
+      for (var round = 0; round < 3; round++) {
+        for (final t in targets) {
+          udp.send(probe, InternetAddress(t), port);
+        }
+        await Future.delayed(Duration(milliseconds: 650));
+      }
+    } catch (e) {
+      print('PC scan failed: $e');
+    } finally {
+      udp?.close();
+      if (mounted) setState(() => _scanning = false);
+    }
   }
 
   void _updateDebugInfo(String info) {
@@ -38,17 +93,15 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
     print('CRICKET DEBUG: $info');
   }
 
-  Future<void> connectToCricketServer() async {
+  Future<void> connectToCricketServer([String? foundIp]) async {
     if (isConnecting) return;
 
-    final ip = _ipController.text.trim();
-    final portText = _portController.text.trim();
-    final port = int.tryParse(portText) ?? 8080;
+    final ip = foundIp ?? _ipController.text.trim();
 
     // Enhanced Cricket 24 validation
     if (ip.isEmpty) {
       setState(() {
-        errorMessage = "Enter your PC's address. The server prints it when it starts.";
+        errorMessage = "Enter the address shown in the PocketPad Server window on your PC.";
         debugInfo = '';
       });
       return;
@@ -57,14 +110,6 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
     if (!_isValidIP(ip)) {
       setState(() {
         errorMessage = "Use four numbers separated by dots, like 192.168.1.100.";
-        debugInfo = '';
-      });
-      return;
-    }
-
-    if (port < 1024 || port > 65535) {
-      setState(() {
-        errorMessage = "Port must be between 1024 and 65535.";
         debugInfo = '';
       });
       return;
@@ -159,26 +204,23 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
     final errorStr = error.toString().toLowerCase();
 
     if (errorStr.contains('timeout') || errorStr.contains('timed out')) {
-      return 'Cricket server timeout. Check:\n'
-          '• Server is running (python server.py)\n'
-          '• IP address matches server output\n'
-          '• Both devices on same WiFi\n'
-          '• Windows firewall allows Python';
+      return 'The PC did not answer. Check:\n'
+          '• PocketPad Server is open on the PC\n'
+          '• The address matches the one in its window\n'
+          '• Phone and PC are on the same Wi-Fi';
     } else if (errorStr.contains('refused') || errorStr.contains('connection failed')) {
-      return 'Cricket server refused connection:\n'
-          '• Check server is running on port 8080\n'
-          '• Verify no firewall blocking\n'
-          '• Try restarting the server';
+      return 'The PC refused the connection:\n'
+          '• Open PocketPad Server on the PC\n'
+          '• If it is open, close it and open it again';
     } else if (errorStr.contains('unreachable') || errorStr.contains('no route')) {
-      return 'Cricket server unreachable:\n'
-          '• Confirm same WiFi network\n'
-          '• Check IP address is correct\n'
-          '• Router allows device communication';
+      return 'The PC cannot be reached:\n'
+          '• Put phone and PC on the same Wi-Fi\n'
+          '• Check the address is correct';
     } else if (errorStr.contains('host lookup failed')) {
-      return 'Invalid Cricket server IP address';
+      return 'That PC address is not valid';
     }
 
-    return 'Cricket connection failed: ${error.toString()}';
+    return 'Could not connect: ${error.toString()}';
   }
 
   void _showCricketTroubleshooting(dynamic error) {
@@ -196,12 +238,9 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
               children: [
                 Text('Check the setup on your PC:', style: TextStyle(color: Pad.muted)),
                 SizedBox(height: 12),
-                _buildCricketStep('1', 'Install Python from python.org'),
-                _buildCricketStep('2', 'Install vgamepad: pip install vgamepad'),
-                _buildCricketStep('3', 'Run the server: python server.py'),
-                _buildCricketStep('4', 'Look for "Connect devices to: X.X.X.X:8080"'),
-                _buildCricketStep('5', 'Enter that exact address here'),
-                _buildCricketStep('6', 'On Windows, allow Python through the firewall'),
+                _buildCricketStep('1', 'Open PocketPad Server on the PC'),
+                _buildCricketStep('2', 'Put phone and PC on the same Wi-Fi'),
+                _buildCricketStep('3', 'Tap Scan again, or type the address shown in the PocketPad Server window'),
                 SizedBox(height: 12),
                 Container(
                   width: double.infinity,
@@ -259,7 +298,6 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
 
   Future<void> _testCricketConnection() async {
     final ip = _ipController.text.trim();
-    final port = int.tryParse(_portController.text.trim()) ?? 8080;
 
     if (ip.isEmpty || !_isValidIP(ip)) {
       setState(() {
@@ -391,12 +429,9 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
           style: TextStyle(color: Pad.muted, fontSize: 14, height: 1.45),
         ),
         SizedBox(height: 16),
-        _setupStep('1', 'Start the server on your PC', TextSpan(children: [
-          TextSpan(text: 'Run '),
-          TextSpan(text: 'python server.py', style: TextStyle(fontFamily: 'monospace', color: Pad.ink, fontSize: 13)),
-        ])),
-        _setupStep('2', 'Enter the address it shows', TextSpan(text: 'Something like 192.168.1.100')),
-        _setupStep('3', 'Stay on the same Wi-Fi', TextSpan(text: 'Allow Python through the firewall if asked')),
+        _setupStep('1', 'Open PocketPad Server on your PC', TextSpan(text: 'Download it from the PocketPad website')),
+        _setupStep('2', 'Use the same Wi-Fi', TextSpan(text: 'Or the phone hotspot, or a USB cable')),
+        _setupStep('3', 'Tap your PC', TextSpan(text: 'It shows up in the list automatically')),
       ],
     );
   }
@@ -432,6 +467,55 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildPcList() {
+    final tiles = _found.map((pc) => Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: Pad.well,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: isConnecting ? null : () => connectToCricketServer(pc.ip),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                child: Row(children: [
+                  Icon(Icons.desktop_windows_rounded, color: Pad.ok, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(pc.name, style: TextStyle(color: Pad.ink, fontSize: 15, fontWeight: FontWeight.w700)),
+                      Text(pc.ip, style: TextStyle(color: Pad.muted, fontSize: 12)),
+                    ]),
+                  ),
+                  Text('Connect', style: TextStyle(color: Pad.ink, fontSize: 13, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+            ),
+          ),
+        ));
+
+    final status = _scanning
+        ? Row(children: [
+            SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Pad.muted)),
+            SizedBox(width: 10),
+            Text('Looking for your PC…', style: TextStyle(color: Pad.muted, fontSize: 13)),
+          ])
+        : _found.isEmpty
+            ? Text('No PC found. Open PocketPad Server on your PC and use the same Wi-Fi.',
+                style: TextStyle(color: Pad.muted, fontSize: 13))
+            : SizedBox.shrink();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ...tiles,
+      status,
+      if (!_scanning)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _buildLinkButton(label: 'Scan again', icon: Icons.refresh_rounded, onPressed: _scan),
+        ),
+    ]);
   }
 
   Widget _buildConnectButton() {
@@ -551,21 +635,16 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
         children: [
           Text('Connect to your PC', style: TextStyle(color: Pad.ink, fontSize: 20, fontWeight: FontWeight.w700)),
           SizedBox(height: 14),
+          _buildPcList(),
+          SizedBox(height: 18),
           _buildField(
-            label: 'PC address',
+            label: 'Or type the PC address',
             controller: _ipController,
             hint: '192.168.1.100',
             keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
-          SizedBox(height: 12),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            SizedBox(
-              width: 104,
-              child: _buildField(label: 'Port', controller: _portController, keyboardType: TextInputType.number),
-            ),
-            SizedBox(width: 10),
-            Expanded(child: _buildConnectButton()),
-          ]),
+          SizedBox(height: 10),
+          _buildConnectButton(),
           _buildMessage(),
           SizedBox(height: 8),
           Divider(height: 1, color: Pad.line),
@@ -621,7 +700,6 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
   @override
   void dispose() {
     _ipController.dispose();
-    _portController.dispose();
     super.dispose();
   }
 }
