@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:vibration/vibration.dart';
 import 'home_screen.dart';
+import 'pad_layout.dart';
 
 /// Console design tokens, shared by the connect and controller screens.
 class Pad {
@@ -104,9 +105,18 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
   int _inputRate = 0;
   int _sentAtLastTick = 0;
 
+  // Custom layout (lib/pad_layout.dart) and the edit-layout mode
+  Map<String, ControlPos> _layout = PadLayout.defaults();
+  bool _editing = false;
+  String? _selected;
+  bool _barAtBottom = false; // edit bar can flip so it never hides a control for good
+
   @override
   void initState() {
     super.initState();
+    PadLayout.load().then((l) {
+      if (mounted) setState(() => _layout = l);
+    });
     _initializeCricketSocket();
     _checkVibrationSupport();
     _sendCricketHandshake();
@@ -251,7 +261,7 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Your phone can't reach the server. Check that server.py is still running and both devices are on the same Wi-Fi.",
+                "Your phone can't reach the PC. Check that PocketPad Server is still open and both devices are on the same Wi-Fi.",
                 style: TextStyle(color: Pad.muted),
               ),
               SizedBox(height: 12),
@@ -740,7 +750,6 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
   // ---------------------------------------------------------------------------
 
   static const double _canvasW = 824, _canvasH = 370;
-  static const double _edgeX = 24, _edgeBottom = 16;
 
   Widget _holdKey(String label, {required double width, required double height, required BorderRadius radius, double fontSize = 16}) {
     return PadKey(
@@ -867,6 +876,20 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
       SizedBox(width: 8),
       Semantics(
         button: true,
+        label: 'Edit layout',
+        child: Material(
+          color: Pad.well,
+          shape: CircleBorder(),
+          child: InkWell(
+            customBorder: CircleBorder(),
+            onTap: _startEditing,
+            child: SizedBox(width: 48, height: 48, child: Icon(Icons.edit_rounded, color: Pad.muted, size: 22)),
+          ),
+        ),
+      ),
+      SizedBox(width: 8),
+      Semantics(
+        button: true,
         label: 'Disconnect',
         child: Material(
           color: Pad.well,
@@ -908,39 +931,183 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
     );
   }
 
-  Widget _buildCanvas() {
+  /// Every movable control group: display name, natural size on the canvas, builder.
+  Map<String, ({String name, Size size, Widget Function() build})> get _groups {
     const reach = PadStick.reach;
-    return Stack(children: [
-      // Thumb-side controls. RTL directionality mirrors them for left-handed play.
-      Positioned.fill(
-        child: Directionality(
-          textDirection: widget.leftHanded ? TextDirection.rtl : TextDirection.ltr,
-          child: Stack(children: [
-            PositionedDirectional(start: _edgeX, top: 14, child: _trigger('LT')),
-            PositionedDirectional(start: _edgeX + 124, top: 20,
-                child: _holdKey('LB', width: 84, height: 48, radius: BorderRadius.circular(24))),
-            PositionedDirectional(end: _edgeX + 124, top: 20,
-                child: _holdKey('RB', width: 84, height: 48, radius: BorderRadius.circular(24))),
-            PositionedDirectional(end: _edgeX, top: 14, child: _trigger('RT')),
-            PositionedDirectional(
-              start: _edgeX + 12 - reach,
-              bottom: _edgeBottom + 6 - reach,
-              child: PadStick(size: 150, label: 'Move', onMove: (x, y) => _sendJoystick('left', x, y)),
-            ),
-            PositionedDirectional(start: 190, top: 84, child: _dpad()),
-            PositionedDirectional(
-              end: 216 - reach,
-              top: 96 - reach,
-              child: PadStick(size: 112, label: 'Camera', onMove: (x, y) => _sendJoystick('right', x, y)),
-            ),
-            PositionedDirectional(end: _edgeX, bottom: _edgeBottom, child: _faceButtons()),
-          ]),
-        ),
+    final pill = BorderRadius.circular(24);
+    return {
+      'LT': (name: 'Left trigger', size: Size(112, 56), build: () => _trigger('LT')),
+      'LB': (name: 'Left bumper', size: Size(84, 48), build: () => _holdKey('LB', width: 84, height: 48, radius: pill)),
+      'RB': (name: 'Right bumper', size: Size(84, 48), build: () => _holdKey('RB', width: 84, height: 48, radius: pill)),
+      'RT': (name: 'Right trigger', size: Size(112, 56), build: () => _trigger('RT')),
+      'LS': (
+        name: 'Left stick',
+        size: Size(150 + reach * 2, 150 + reach * 2),
+        build: () => PadStick(size: 150, label: 'Move', onMove: (x, y) => _sendJoystick('left', x, y)),
       ),
-      // Centre column is never mirrored.
-      Positioned(top: 18, left: 0, right: 0, child: Center(child: _hud())),
-      Positioned(top: 112, left: 0, right: 0, child: Center(child: _systemGrid())),
+      'DPAD': (name: 'D-pad', size: Size(144, 144), build: _dpad),
+      'RS': (
+        name: 'Right stick',
+        size: Size(112 + reach * 2, 112 + reach * 2),
+        build: () => PadStick(size: 112, label: 'Camera', onMove: (x, y) => _sendJoystick('right', x, y)),
+      ),
+      'FACE': (name: 'A B X Y', size: Size(188, 178), build: _faceButtons),
+      'SYS': (name: 'Menu buttons', size: Size(116, 116), build: _systemGrid),
+    };
+  }
+
+  Widget _buildCanvas(double w, double h) {
+    final groups = _groups;
+    final controls = <Widget>[];
+    for (final id in groups.keys) {
+      final g = groups[id]!;
+      final p = _layout[id]!;
+      if (!p.visible) continue;
+      // Left-handed mirrors the thumb-side controls; the menu column stays put.
+      final mirror = widget.leftHanded && id != 'SYS';
+      final size = g.size * p.scale;
+      final cx = (mirror ? 1 - p.x : p.x) * w;
+
+      Widget child = SizedBox.fromSize(
+        size: size,
+        child: FittedBox(child: SizedBox.fromSize(size: g.size, child: g.build())),
+      );
+      if (_editing) {
+        child = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => setState(() => _selected = id),
+          onPanStart: (_) => setState(() => _selected = id),
+          onPanUpdate: (d) => setState(() {
+            p.x = (p.x + d.delta.dx / w * (mirror ? -1 : 1)).clamp(0.0, 1.0);
+            p.y = (p.y + d.delta.dy / h).clamp(0.0, 1.0);
+          }),
+          child: Stack(children: [
+            IgnorePointer(child: child),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: _selected == id ? Pad.y : Pad.line, width: 2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ]),
+        );
+      }
+      controls.add(Positioned(left: cx - size.width / 2, top: p.y * h - size.height / 2, child: child));
+    }
+
+    return Stack(children: [
+      ...controls,
+      Positioned(
+        top: _editing && _barAtBottom ? null : 18,
+        bottom: _editing && _barAtBottom ? 18 : null,
+        left: 0,
+        right: 0,
+        child: Center(child: _editing ? _editBar() : _hud()),
+      ),
     ]);
+  }
+
+  void _startEditing() {
+    _releaseAllInputs();
+    setState(() {
+      _editing = true;
+      _selected = null;
+    });
+  }
+
+  void _finishEditing() {
+    PadLayout.save(_layout);
+    setState(() => _editing = false);
+  }
+
+  /// Let go of anything held so entering edit mode never leaves a key stuck on the PC.
+  void _releaseAllInputs() {
+    _sendCricketMessage({'type': 'reset_all', 'player': playerId});
+    _buttonStates.clear();
+    _physicallyPressed.clear();
+    _triggerStates.updateAll((_, _) => 0.0);
+  }
+
+  Widget _editBar() {
+    final sel = _selected == null ? null : _layout[_selected]!;
+    final hidden = _layout.entries.where((e) => !e.value.visible).map((e) => e.key).toList();
+    Widget btn(String label, VoidCallback onTap, {bool primary = false}) => Padding(
+          padding: EdgeInsets.only(left: 6),
+          child: FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: primary ? Pad.ink : Pad.raised,
+              foregroundColor: primary ? Pad.well : Pad.ink,
+              minimumSize: Size(0, 40),
+              padding: EdgeInsets.symmetric(horizontal: 14),
+              textStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            child: Text(label),
+          ),
+        );
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: Pad.well, borderRadius: BorderRadius.circular(24)),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          if (sel == null)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text('Drag to move. Tap a control to resize or hide it.',
+                  style: TextStyle(color: Pad.muted, fontSize: 13)),
+            )
+          else ...[
+            Padding(
+              padding: EdgeInsets.only(left: 8),
+              child: Text(_groups[_selected]!.name,
+                  style: TextStyle(color: Pad.ink, fontSize: 13, fontWeight: FontWeight.w700)),
+            ),
+            SizedBox(
+              width: 150,
+              child: Slider(
+                value: sel.scale,
+                min: PadLayout.minScale,
+                max: PadLayout.maxScale,
+                activeColor: Pad.ink,
+                inactiveColor: Pad.raised,
+                label: 'Size',
+                onChanged: (v) => setState(() => sel.scale = v),
+              ),
+            ),
+            btn('Hide', () => setState(() {
+                  sel.visible = false;
+                  _selected = null;
+                })),
+          ],
+          IconButton(
+            tooltip: _barAtBottom ? 'Move this bar to the top' : 'Move this bar to the bottom',
+            onPressed: () => setState(() => _barAtBottom = !_barAtBottom),
+            icon: Icon(Icons.swap_vert_rounded, color: Pad.muted),
+          ),
+          btn('Reset', () => setState(() {
+                _layout = PadLayout.defaults();
+                _selected = null;
+              })),
+          btn('Done', _finishEditing, primary: true),
+        ]),
+        if (hidden.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Wrap(spacing: 6, children: [
+              for (final id in hidden)
+                ActionChip(
+                  label: Text('Show ${_groups[id]!.name}', style: TextStyle(color: Pad.ink, fontSize: 12)),
+                  backgroundColor: Pad.raised,
+                  side: BorderSide.none,
+                  onPressed: () => setState(() => _layout[id]!.visible = true),
+                ),
+            ]),
+          ),
+      ]),
+    );
   }
 
   @override
@@ -955,13 +1122,10 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
             // Scale the canvas to fit; it widens on wider screens so edge-anchored
             // controls stay at the edges.
             final scale = math.min(c.maxWidth / _canvasW, c.maxHeight / _canvasH);
+            final w = c.maxWidth / scale, h = c.maxHeight / scale;
             return SizedBox.expand(
               child: FittedBox(
-                child: SizedBox(
-                  width: c.maxWidth / scale,
-                  height: c.maxHeight / scale,
-                  child: _buildCanvas(),
-                ),
+                child: SizedBox(width: w, height: h, child: _buildCanvas(w, h)),
               ),
             );
           }),
