@@ -142,6 +142,11 @@ class App:
             lbl = tk.Label(st, text="", font=(FONT, 10), bg=BG, fg=MUTED, anchor="w", justify="left", wraplength=380)
             lbl.pack(fill="x", pady=1)
             self.status[key] = lbl
+            if key == "driver":
+                # shown only when the driver is missing; installing waits for this click
+                self.install_ok = threading.Event()
+                self.install_btn = self._button(st, "Install controller driver", self.install_ok.set)
+                self.install_btn.config(bg=OK, fg=WELL, activebackground=OK, font=(FONT, 10, "bold"))
 
         self.log_btn = self._button(self.root, "Show log", self.toggle_log)
         self.log_btn.pack(anchor="w", pady=(16, 20), **pad)
@@ -177,6 +182,8 @@ class App:
     def _run(self):
         self.state["firewall"] = ensure_firewall()
         if not driver_ready():
+            self.state["driver"] = "needs_install"
+            self.install_ok.wait()  # the user's consent: the Install button
             self.state["driver"] = "installing"
             install_driver()
         self.state["driver"] = driver_ready()
@@ -217,8 +224,14 @@ class App:
                 text.config(text="Waiting for a phone", fg=MUTED)
 
         drv = s["driver"]
+        if drv == "needs_install" and not self.install_btn.winfo_ismapped():
+            self.install_btn.pack(anchor="w", pady=(4, 8), after=self.status["driver"])
+        elif drv != "needs_install" and self.install_btn.winfo_ismapped():
+            self.install_btn.pack_forget()
         self._status("driver", *(
-            ("Installing the controller driver…", MUTED) if drv == "installing" else
+            ("This PC needs the free ViGEmBus driver so games can see PocketPad as an Xbox controller. "
+             "It installs in about 10 seconds.", INK) if drv == "needs_install" else
+            ("Installing the controller driver… accept any Windows prompt.", MUTED) if drv == "installing" else
             ("✓  Controller driver ready", OK) if drv is True else
             ("✕  Controller driver not working. Close this window and open PocketPad Server again. "
              "If it still fails, restart the PC.", BAD) if drv is False else
