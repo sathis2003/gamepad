@@ -117,6 +117,15 @@
   #signup-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
   #signup-msg.ok{color:var(--g)}#signup-msg.bad{color:var(--r)}
 
+  dialog{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--line);
+    border-radius:20px;background:var(--bg);color:var(--ink);overflow:auto}
+  dialog::backdrop{background:#000a}
+  dialog:focus-visible{outline:none}
+  .dlg-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px 20px}
+  .dlg-head h2{font-size:24px;margin:0}
+  .dlg-close{width:44px;height:44px;border-radius:50%;border:0;background:var(--raised);color:var(--ink);font-size:18px;cursor:pointer}
+  dialog iframe{display:block;width:100%;height:620px;border:0;background:#f9f9f9}
+  .dlg-note{color:var(--muted);font-size:13px;margin:0;padding:10px 20px 16px}
   footer{padding:28px 0 40px;color:var(--muted);font-size:14px;display:flex;gap:22px;flex-wrap:wrap;border-top:1px solid var(--line)}
   footer a{color:var(--muted)}
 
@@ -252,7 +261,7 @@
     <div>
       <h2>Buy me a coffee</h2>
       <p>PocketPad is free and made by one person. If it makes your games better, a coffee helps keep it going.</p>
-      <a class="btn coffee" href="https://ko-fi.com/hunter74491" target="_blank" rel="noopener">
+      <a class="btn coffee js-coffee" href="https://ko-fi.com/hunter74491" target="_blank" rel="noopener">
         <b>Buy me a coffee</b><span>On Ko-fi, by card or PayPal</span></a>
     </div>
     <div>
@@ -271,11 +280,23 @@
 <div class="wrap">
   <footer>
     <span>PocketPad is free.</span>
-    <a href="https://ko-fi.com/hunter74491">Buy me a coffee</a>
+    <a class="js-coffee" href="https://ko-fi.com/hunter74491">Buy me a coffee</a>
     <a href="privacy-policy.html">Privacy</a>
     <a href="https://github.com/sathis2003/app-releases/issues">Report a problem</a>
   </footer>
 </div>
+
+<!-- Ko-fi's own donation panel, shown on this page so supporters pay without leaving the site -->
+<dialog id="coffee" aria-labelledby="coffee-title">
+  <div class="dlg-head">
+    <h2 id="coffee-title">Buy me a coffee</h2>
+    <button type="button" class="dlg-close" aria-label="Close">✕</button>
+  </div>
+  <iframe data-src="https://ko-fi.com/hunter74491/?hidefeed=true&amp;widget=true&amp;embed=true&amp;preview=true"
+          title="Ko-fi donation panel for PocketPad" loading="lazy"></iframe>
+  <p class="dlg-note">Payments are handled by Ko-fi and PayPal. Panel not loading?
+    <a href="https://ko-fi.com/hunter74491" target="_blank" rel="noopener">Open it on Ko-fi</a>.</p>
+</dialog>
 
 <script>
 // Live demo: phone buttons and stick light up the "Windows sees" panel.
@@ -316,6 +337,20 @@ addEventListener('keydown', e => {
   e.preventDefault(); held.add(e.key); arrowStick();
 });
 addEventListener('keyup', e => { if (held.delete(e.key)) arrowStick(); });
+
+// Buy me a coffee: open Ko-fi's panel in a dialog; the iframe loads only when first opened.
+const coffee = document.getElementById('coffee'), frame = coffee.querySelector('iframe');
+function openCoffee() {
+  if (!frame.src) frame.src = frame.dataset.src;
+  coffee.showModal();
+}
+document.querySelectorAll('.js-coffee').forEach(a => a.addEventListener('click', e => {
+  if (!coffee.showModal) return;          // very old browser: follow the plain Ko-fi link
+  e.preventDefault(); openCoffee();
+}));
+coffee.querySelector('.dlg-close').addEventListener('click', () => coffee.close());
+coffee.addEventListener('click', e => { if (e.target === coffee) coffee.close(); });  // click outside
+if (location.hash === '#coffee') openCoffee();  // the app links here
 
 // Email signup -> /api/subscribe (Cloudflare Worker, see worker/index.js)
 const form = document.getElementById('signup'), msg = document.getElementById('signup-msg');
