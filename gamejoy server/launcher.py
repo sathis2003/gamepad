@@ -51,7 +51,7 @@ def ensure_firewall() -> bool:
 
 
 def driver_ready() -> bool:
-    if not servere.VGAMEPAD_AVAILABLE:
+    if not servere.VGAMEPAD_AVAILABLE and not servere.load_vgamepad():
         return False
     try:
         servere.vg.VX360Gamepad()
@@ -252,7 +252,12 @@ def main():
         import ctypes
         ctypes.windll.shcore.SetProcessDpiAwareness(1)  # sharp text on scaled displays
     root = tk.Tk()
-    App(root)
+    try:
+        App(root)
+    except Exception as e:  # a plain message instead of PyInstaller's traceback dialog
+        from tkinter import messagebox
+        messagebox.showerror("PocketPad Server", f"PocketPad Server could not start.\n\n{e}")
+        return
     root.mainloop()
 
 

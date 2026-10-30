@@ -20,15 +20,30 @@ logger = logging.getLogger(__name__)
 
 # Global flags
 VGAMEPAD_AVAILABLE = False
+vg = None
 
-# Minimal imports for maximum performance
-if platform.system() == "Windows":
+
+def load_vgamepad() -> bool:
+    """(Re)import vgamepad. Its import connects to the ViGEmBus driver and raises
+    VIGEM_ERROR_BUS_NOT_FOUND when the driver is missing, so this is safe to call
+    again after the launcher installs the driver."""
+    global vg, VGAMEPAD_AVAILABLE
+    if platform.system() != "Windows":
+        return False
+    for name in [m for m in sys.modules if m == "vgamepad" or m.startswith("vgamepad.")]:
+        del sys.modules[name]  # drop the half-imported module from a failed attempt
     try:
-        import vgamepad as vg
+        import vgamepad
+        vg = vgamepad
         VGAMEPAD_AVAILABLE = True
         logger.info("✅ vgamepad ready")
-    except ImportError:
-        logger.warning("⚠️ vgamepad not installed")
+    except Exception as e:  # ImportError, or the bus-not-found error from the driver
+        VGAMEPAD_AVAILABLE = False
+        logger.warning(f"⚠️ Controller driver not ready: {e}")
+    return VGAMEPAD_AVAILABLE
+
+
+load_vgamepad()
 
 
 class CricketOptimizedController:
