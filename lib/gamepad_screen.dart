@@ -217,7 +217,7 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
       setState(() {});
       Future.microtask(() {
         if (mounted) {
-          _showErrorSnackBar('Cricket connection lost');
+          _showErrorSnackBar('Connection to the PC lost');
 
           Future.delayed(Duration(milliseconds: 800), () {
             if (mounted) {
@@ -281,7 +281,7 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
         if (mounted && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Cricket 24: $message'),
+              content: Text(message),
               backgroundColor: Colors.red[600],
               duration: Duration(seconds: 4),
             ),
@@ -586,67 +586,6 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
     print('CRICKET TAP: $button');
   }
 
-  // SPECIAL: Cricket 24 Appeal with enhanced feedback
-  void _sendCricketAppeal() {
-    if (!_isConnected) return;
-
-    final now = DateTime.now();
-    final lastAppeal = _lastButtonPress['APPEAL'];
-
-    if (lastAppeal != null && now.difference(lastAppeal) < _appealCooldown) {
-      final remaining = _appealCooldown.inMilliseconds - now.difference(lastAppeal).inMilliseconds;
-      print('Cricket APPEAL on cooldown: ${remaining}ms remaining');
-      return;
-    }
-
-    _lastButtonPress['APPEAL'] = now;
-
-    _sendCricketMessage({
-      'player': playerId,
-      'button': 'APPEAL',
-      'type': 'tap',
-      'game': 'cricket24',
-      'priority': 'high',
-      'timestamp': now.millisecondsSinceEpoch,
-    });
-
-    // Enhanced appeal feedback
-    _vibrateCricketAppeal();
-    HapticFeedback.heavyImpact();
-
-    print('CRICKET APPEAL SENT!');
-
-    _showAppealFeedback();
-
-    // Tick the countdown on the DRS button until the cooldown ends
-    _appealTicker?.cancel();
-    _appealTicker = Timer.periodic(Duration(milliseconds: 100), (t) {
-      if (!mounted) return t.cancel();
-      setState(() {});
-      if (!_isButtonOnCooldown('APPEAL')) t.cancel();
-    });
-    setState(() {});
-  }
-
-  void _showAppealFeedback() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.sports_cricket, color: Pad.well, size: 18),
-            SizedBox(width: 8),
-            Text('Review sent', style: TextStyle(color: Pad.well, fontWeight: FontWeight.w700)),
-          ],
-        ),
-        duration: Duration(milliseconds: 1000),
-        backgroundColor: Pad.ink,
-        behavior: SnackBarBehavior.floating,
-        width: 200,
-        shape: StadiumBorder(),
-      ),
-    );
-  }
-
   void _sendJoystick(String id, double x, double y) {
     if (!_isConnected) return;
 
@@ -894,64 +833,6 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
     );
   }
 
-  Widget _drsButton() {
-    final cooling = _isButtonOnCooldown('APPEAL');
-    final last = _lastButtonPress['APPEAL'];
-    final remaining = cooling && last != null
-        ? (_appealCooldown - DateTime.now().difference(last)).inMilliseconds / 1000
-        : 0.0;
-    final content = cooling ? Pad.muted : Pad.well;
-
-    return PadKey(
-      label: 'DRS review',
-      height: 60,
-      radius: BorderRadius.circular(18),
-      idleFill: cooling ? Pad.raised : Pad.ink,
-      idleShadow: cooling ? null : Pad.inkShadow,
-      activeFill: Colors.white,
-      color: content,
-      dimWhenCooling: false,
-      onDown: () {
-        if (cooling) return;
-        HapticFeedback.heavyImpact();
-        _sendCricketAppeal();
-      },
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(10, 0, 18, 0),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: content.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text('T', style: TextStyle(fontSize: 24)),
-            ),
-            SizedBox(width: 10),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('DRS review', style: TextStyle(fontSize: 16, height: 1.1)),
-                SizedBox(
-                  width: 82,
-                  child: Text(
-                    cooling ? 'Wait ${remaining.toStringAsFixed(1)}s' : 'Ready',
-                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: content.withValues(alpha: 0.75)),
-                  ),
-                ),
-              ],
-            ),
-          ]),
-        ),
-      ),
-    );
-  }
-
   Widget _hud() {
     final statusColor = _isConnected ? Pad.ok : Pad.bad;
     final statusText = _isConnected
@@ -1053,7 +934,6 @@ class _CricketGamepadScreenState extends State<CricketGamepadScreen> {
               child: PadStick(size: 112, label: 'Camera', onMove: (x, y) => _sendJoystick('right', x, y)),
             ),
             PositionedDirectional(end: _edgeX, bottom: _edgeBottom, child: _faceButtons()),
-            PositionedDirectional(end: 236, bottom: _edgeBottom + 4, child: _drsButton()),
           ]),
         ),
       ),

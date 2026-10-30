@@ -88,7 +88,7 @@ class CricketOptimizedController:
             self.trigger_state = {'LT': 0.0, 'RT': 0.0}
             self.trigger_press_time = {'LT': 0, 'RT': 0}
             
-            logger.info(f"🎮 Cricket Controller {self.controller_id} initialized")
+            logger.info(f"🎮 Controller {self.controller_id} initialized")
             
         except Exception as e:
             logger.error(f"❌ Controller {self.controller_id} initialization failed: {e}")
@@ -278,7 +278,7 @@ class CricketOptimizedController:
             return True
             
         except Exception as e:
-            logger.error(f"❌ Cricket tap error {button}: {e}")
+            logger.error(f"❌ tap error {button}: {e}")
             return False
     
     def update_trigger(self, trigger: str, value: float):
@@ -547,9 +547,9 @@ class CricketGamepadServer:
         
         self._init_cricket_controllers()
         
-        logger.info(f"🏏 Cricket 24 Gamepad Server")
+        logger.info(f"🎮 Gamepad Server")
         logger.info(f"📡 {host}:{port} | Players: {max_players}")
-        logger.info(f"⚡ Cricket optimized with enhanced stability")
+        logger.info(f"⚡ Low-latency input")
     
     def _init_cricket_controllers(self):
         """Initialize controller pool"""
@@ -561,7 +561,7 @@ class CricketGamepadServer:
             self.processors[i] = processor
         
         active = sum(1 for c in self.controllers.values() if c.active)
-        logger.info(f"🎮 Cricket Controllers: {active}/{len(self.controllers)} active")
+        logger.info(f"🎮 Controllers: {active}/{len(self.controllers)} active")
         
         if active == 0:
             logger.warning("⚠️ No active controllers - check vgamepad installation")
@@ -584,7 +584,7 @@ class CricketGamepadServer:
                     }
                     self.total_connections += 1
                     self.active_connections += 1
-                    logger.info(f"🏏 Cricket Player {cid} connected from {client_address[0]}")
+                    logger.info(f"🎮 Player {cid} connected from {client_address[0]}")
                     return cid
         return None
     
@@ -745,7 +745,7 @@ class CricketGamepadServer:
                 # Reset controller
                 self.controllers[controller_id].emergency_reset()
                 
-                logger.info(f"🏏 Cricket Player {controller_id} disconnected")
+                logger.info(f"🎮 Player {controller_id} disconnected")
                 logger.info(f"   Duration: {duration:.1f}s, Messages: {msg_count}")
     
     def start_server(self):
@@ -797,9 +797,9 @@ class CricketGamepadServer:
             # Get network interfaces
             local_ips = self._get_cricket_network_info()
             
-            logger.info(f"\n🚀 Cricket 24 Server Ready!")
+            logger.info(f"\n🚀 Server Ready!")
             logger.info(f"📡 Listening on port {self.port}")
-            logger.info(f"🏏 Cricket optimized with enhanced stability")
+            logger.info(f"🎮 Low-latency input")
             logger.info(f"📱 Connect your devices to any of these addresses:")
             for ip in local_ips:
                 logger.info(f"   • {ip}:{self.port}")
@@ -813,7 +813,7 @@ class CricketGamepadServer:
                 try:
                     client_socket, addr = self.server_socket.accept()
                     client_ip = addr[0]
-                    logger.info(f"📱 New Cricket 24 connection from {client_ip}:{addr[1]}")
+                    logger.info(f"📱 New connection from {client_ip}:{addr[1]}")
                     
                     # Client socket optimization
                     try:
@@ -836,7 +836,7 @@ class CricketGamepadServer:
                     controller_id = self._assign_controller(client_socket, addr)
                     
                     if controller_id is None:
-                        logger.warning(f"🚫 Cricket server full ({self.active_connections}/{self.max_players})")
+                        logger.warning(f"🚫 server full ({self.active_connections}/{self.max_players})")
                         try:
                             reject_msg = json.dumps({
                                 'type': 'cricket_server_full', 
@@ -873,7 +873,7 @@ class CricketGamepadServer:
                         time.sleep(0.1)
         
         except KeyboardInterrupt:
-            logger.info("\n🏏 Cricket 24 server stopped by user")
+            logger.info("\n🎮 server stopped by user")
         except Exception as e:
             logger.error(f"❌ Critical server error: {e}")
             import traceback
@@ -923,12 +923,12 @@ class CricketGamepadServer:
         
         # Report server status every 5 minutes
         if int(uptime) % 300 == 0 and int(uptime) > 0:
-            logger.info(f"🏏 Cricket Server Status: {self.active_connections}/{self.max_players} players, "
+            logger.info(f"🎮 Server Status: {self.active_connections}/{self.max_players} players, "
                        f"uptime: {uptime/3600:.1f}h, total connections: {self.total_connections}")
     
     def shutdown(self):
         """Clean shutdown"""
-        logger.info("\n🔥 Shutting down Cricket 24 server...")
+        logger.info("\n🔥 Shutting down server...")
         self.running = False
         
         # Stop all client threads
@@ -956,12 +956,12 @@ class CricketGamepadServer:
         if hasattr(self, 'server_socket'):
             try:
                 self.server_socket.close()
-                logger.info("📡 Cricket server socket closed")
+                logger.info("📡 server socket closed")
             except:
                 pass
         
         uptime = time.time() - self.start_time
-        logger.info(f"🏏 Cricket 24 server shutdown complete")
+        logger.info(f"🎮 server shutdown complete")
         logger.info(f"   Session duration: {uptime/3600:.1f} hours")
         logger.info(f"   Total connections served: {self.total_connections}")
     
@@ -1084,10 +1084,10 @@ def main():
         server.start_server()
         return 0
     except KeyboardInterrupt:
-        logger.info("\n🏏 Cricket 24 server stopped by user")
+        logger.info("\n🎮 server stopped by user")
         return 0
     except Exception as e:
-        logger.error(f"❌ Critical Cricket 24 server error: {e}")
+        logger.error(f"❌ Critical server error: {e}")
         logger.error(f"🔍 Error type: {type(e).__name__}")
         
         import traceback

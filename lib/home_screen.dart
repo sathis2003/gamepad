@@ -122,26 +122,26 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
     });
 
     try {
-      _updateDebugInfo("Step 1: Establishing Cricket server connection...");
+      _updateDebugInfo("Step 1: Connecting to the PC…");
 
       Socket? socket;
       try {
         socket = await Socket.connect(ip, port, timeout: Duration(seconds: 10));
-        _updateDebugInfo("Step 1: Cricket server connection established!");
+        _updateDebugInfo("Step 1: Connected to the PC");
       } catch (e) {
-        _updateDebugInfo("Step 1: Cricket connection failed - ${e.toString()}");
-        throw SocketException('Cricket server unreachable: ${_getCricketErrorMessage(e)}');
+        _updateDebugInfo("Step 1: Connection failed - ${e.toString()}");
+        throw SocketException('PC unreachable: ${_getCricketErrorMessage(e)}');
       }
 
-      _updateDebugInfo("Step 2: Optimizing Cricket connection...");
+      _updateDebugInfo("Step 2: Tuning for low latency…");
       try {
         socket.setOption(SocketOption.tcpNoDelay, true);
-        _updateDebugInfo("Step 2: Cricket connection optimized for low latency");
+        _updateDebugInfo("Step 2: Low latency on");
       } catch (e) {
         _updateDebugInfo("Step 2: Optimization warning: $e");
       }
 
-      _updateDebugInfo("Step 3: Testing Cricket server compatibility...");
+      _updateDebugInfo("Step 3: Checking PocketPad Server…");
       try {
         final cricketHandshake = jsonEncode({
           'type': 'cricket_test',
@@ -155,14 +155,14 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
 
         socket.write('$cricketHandshake\n');
         await socket.flush();
-        _updateDebugInfo("Step 3: Cricket handshake sent successfully");
+        _updateDebugInfo("Step 3: Handshake sent");
 
         // Wait for server response
         await Future.delayed(Duration(milliseconds: 300));
-        _updateDebugInfo("Step 3: Cricket server ready for gameplay");
+        _updateDebugInfo("Step 3: Ready to play");
 
       } catch (e) {
-        _updateDebugInfo("Step 3: Cricket test warning: $e");
+        _updateDebugInfo("Step 3: Check warning: $e");
       }
 
       _updateDebugInfo("Connected. Opening the controller…");
@@ -314,12 +314,12 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
 
     Socket? testSocket;
     try {
-      _updateDebugInfo("Cricket Test 1: Checking server availability...");
+      _updateDebugInfo("Test 1: Checking server availability...");
 
       testSocket = await Socket.connect(ip, port, timeout: Duration(seconds: 8));
-      _updateDebugInfo("Cricket Test 1: SUCCESS - Server is responding!");
+      _updateDebugInfo("Test 1: SUCCESS - Server is responding!");
 
-      _updateDebugInfo("Cricket Test 2: Verifying Cricket server type...");
+      _updateDebugInfo("Test 2: Checking PocketPad Server…");
 
       try {
         final testMsg = jsonEncode({
@@ -331,29 +331,29 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
 
         testSocket.write('$testMsg\n');
         await testSocket.flush();
-        _updateDebugInfo("Cricket Test 2: Server communication verified!");
+        _updateDebugInfo("Test 2: Server communication verified!");
 
         await Future.delayed(Duration(milliseconds: 600));
         _updateDebugInfo("Server found. You're ready to connect.");
 
       } catch (e) {
-        _updateDebugInfo("Cricket Test 2: Communication test completed (server may not respond to tests)");
+        _updateDebugInfo("Test 2: Communication test completed (server may not respond to tests)");
       }
 
     } catch (e) {
-      _updateDebugInfo("CRICKET TESTS FAILED: ${_getCricketErrorMessage(e)}");
+      _updateDebugInfo("Test failed: ${_getCricketErrorMessage(e)}");
 
       // Additional Cricket-specific diagnostics
       if (e.toString().contains('timeout')) {
-        _updateDebugInfo("\nCricket Diagnosis: Server timeout");
-        _updateDebugInfo("• Check if 'python server.py' is running");
-        _updateDebugInfo("• Verify IP matches server output exactly");
+        _updateDebugInfo("\nDiagnosis: Server timeout");
+        _updateDebugInfo("• Check PocketPad Server is open on the PC");
+        _updateDebugInfo("• Check the address matches its window");
         _updateDebugInfo("• Ensure both devices on same WiFi network");
       } else if (e.toString().contains('refused')) {
-        _updateDebugInfo("\nCricket Diagnosis: Connection refused");
+        _updateDebugInfo("\nDiagnosis: Connection refused");
         _updateDebugInfo("• Server may not be running on port $port");
         _updateDebugInfo("• Check Windows firewall settings");
-        _updateDebugInfo("• Try restarting the Cricket server");
+        _updateDebugInfo("• Close and reopen PocketPad Server");
       }
     } finally {
       try {
@@ -420,12 +420,12 @@ class _CricketHomeScreenState extends State<CricketHomeScreen> {
         ]),
         SizedBox(height: 16),
         Text(
-          'Play Cricket 24\nfrom your phone',
+          'Your phone is\nthe controller',
           style: TextStyle(color: Pad.ink, fontSize: 32, fontWeight: FontWeight.w800, height: 1.08),
         ),
         SizedBox(height: 8),
         Text(
-          'Your phone becomes a wireless controller for the game running on your PC.',
+          'A wireless Xbox-style gamepad for any PC game with controller support.',
           style: TextStyle(color: Pad.muted, fontSize: 14, height: 1.45),
         ),
         SizedBox(height: 16),
