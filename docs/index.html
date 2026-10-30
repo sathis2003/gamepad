@@ -119,8 +119,11 @@
     border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit;font-size:16px}
   form.ask textarea{resize:vertical}
   form.ask button{align-self:flex-start}
-  #ask-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
-  #ask-msg.ok{color:var(--g)}#ask-msg.bad{color:var(--r)}
+  .form-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
+  .form-msg.ok{color:var(--g)}.form-msg.bad{color:var(--r)}
+  form.ask select{padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--well);color:var(--ink);font:inherit;font-size:16px}
+  .hire ul{margin:0 0 18px;padding-left:20px;color:var(--muted)}
+  .hire li{margin:6px 0}
   form button:disabled{opacity:.6;cursor:default}
   .hp{position:absolute;left:-9999px}
   #signup-msg{min-height:1.5em;font-size:15px;margin:10px 0 0}
@@ -164,7 +167,7 @@
     <header>
       <svg class="logo" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#1F2226"/><circle cx="54" cy="36" r="10" fill="#EBCB5E"/><circle cx="36" cy="54" r="10" fill="#6AA6EC"/><circle cx="72" cy="54" r="10" fill="#EE7D76"/><circle cx="54" cy="72" r="10" fill="#7BC96F"/></svg>
       <strong>PocketPad</strong>
-      <nav><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#support">Support</a></nav>
+      <nav><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#support">Support</a><a href="#hire">Hire me</a></nav>
     </header>
 
     <div class="hero-grid">
@@ -274,7 +277,7 @@
       <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button type="submit">Send question</button>
     </form>
-    <p id="ask-msg" role="status"></p>
+    <p id="ask-msg" class="form-msg" role="status"></p>
   </section>
 
   <section class="two support" id="support">
@@ -293,6 +296,39 @@
         <button type="submit">Notify me</button>
       </form>
       <p id="signup-msg" role="status"></p>
+    </div>
+  </section>
+
+  <section class="two hire" id="hire">
+    <div>
+      <h2>Need an app built?</h2>
+      <p class="intro">I built PocketPad end to end: the Android app, the Windows program and this site. I take on freelance projects of the same kind.</p>
+      <ul>
+        <li>Android and iOS apps in Flutter</li>
+        <li>Windows desktop tools in Python</li>
+        <li>Fast websites and landing pages</li>
+        <li>Apps that talk to PCs, devices or local networks</li>
+      </ul>
+    </div>
+    <div>
+      <form class="ask" id="hire-form">
+        <label>Your name<input type="text" name="name" required maxlength="100" autocomplete="name"></label>
+        <label>Your email<input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+        <label>What do you need?
+          <select name="project_type" required>
+            <option value="">Choose one</option>
+            <option>Mobile app</option><option>Desktop app</option><option>Website</option><option>Something else</option>
+          </select></label>
+        <label>Budget (optional)
+          <select name="budget">
+            <option value="">Not sure yet</option>
+            <option>Under $500</option><option>$500 to $2,000</option><option>$2,000 to $5,000</option><option>Over $5,000</option>
+          </select></label>
+        <label>About the project<textarea name="message" required rows="5" maxlength="4000" placeholder="What should it do, who is it for, and when do you need it?"></textarea></label>
+        <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit">Send enquiry</button>
+      </form>
+      <p id="hire-msg" class="form-msg" role="status"></p>
     </div>
   </section>
 </main>
@@ -372,32 +408,38 @@ coffee.querySelector('.dlg-close').addEventListener('click', () => coffee.close(
 coffee.addEventListener('click', e => { if (e.target === coffee) coffee.close(); });  // click outside
 if (location.hash === '#coffee') openCoffee();  // the app links here
 
-// Questions -> Web3Forms, which emails them to the owner. The access key is public by design:
-// it can only deliver to the inbox it was created for.
-const ask = document.getElementById('ask-form'), askMsg = document.getElementById('ask-msg');
-ask.addEventListener('submit', async e => {
-  e.preventDefault();
-  const btn = ask.querySelector('button');
-  btn.disabled = true; askMsg.className = ''; askMsg.textContent = 'Sending…';
-  try {
-    const res = await fetch('https://api.web3forms.com/submit', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        access_key: 'fdb24a36-ac17-4659-bf94-9fdc9af81d26',
-        subject: 'PocketPad question from ' + ask.name.value,
-        from_name: 'PocketPad website',
-        name: ask.name.value, email: ask.email.value, message: ask.message.value,
-        botcheck: ask.botcheck.checked,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.success) throw new Error(data.message || 'Could not send. Try again in a minute.');
-    askMsg.className = 'ok'; askMsg.textContent = 'Sent. I will reply to your email.';
-    ask.reset();
-  } catch (err) {
-    askMsg.className = 'bad'; askMsg.textContent = err.message;
-  } finally { btn.disabled = false; }
-});
+// Question and freelance forms -> Web3Forms, which emails them to the owner. The access key is
+// public by design: it can only deliver to the inbox it was created for.
+function mailForm(formId, msgId, subject) {
+  const f = document.getElementById(formId), m = document.getElementById(msgId);
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = f.querySelector('button');
+    btn.disabled = true; m.className = 'form-msg'; m.textContent = 'Sending…';
+    const fields = Object.fromEntries(new FormData(f));   // every named field goes into the email
+    delete fields.botcheck;
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: 'fdb24a36-ac17-4659-bf94-9fdc9af81d26',
+          subject: `${subject} from ${fields.name}`,
+          from_name: 'PocketPad website',
+          ...fields,
+          botcheck: f.botcheck.checked,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.message || 'Could not send. Try again in a minute.');
+      m.className = 'form-msg ok'; m.textContent = 'Sent. I will reply to your email.';
+      f.reset();
+    } catch (err) {
+      m.className = 'form-msg bad'; m.textContent = err.message;
+    } finally { btn.disabled = false; }
+  });
+}
+mailForm('ask-form', 'ask-msg', 'PocketPad question');
+mailForm('hire-form', 'hire-msg', 'Freelance enquiry');
 
 // Email signup -> /api/subscribe (Cloudflare Worker, see worker/index.js)
 const form = document.getElementById('signup'), msg = document.getElementById('signup-msg');
